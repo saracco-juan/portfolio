@@ -17,6 +17,7 @@ import {
     Download
 } from 'lucide-react';
 import profileImage from '../../assets/juan-4x4.jpg';
+import resume from '../../assets/juan-cv.jpeg';
 
 const Portfolio = () => {
     const [darkMode, setDarkMode] = useState(true);
@@ -130,14 +131,14 @@ const Portfolio = () => {
                     </div>
 
                     <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight mb-6 animate-fade-in-up delay-100">
-                        Front-End Developer <br />
                         <span className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
-                            React & UI Implementation
-                        </span>
+                            Juan Sebastian
+                        </span> <br />
+                        Front-End Developer
                     </h1>
 
                     <p className={`text-xl md:text-2xl max-w-2xl leading-relaxed mb-10 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'} animate-fade-in-up delay-200`}>
-                        Building fast, accessible interfaces and high-quality email experiences. Currently delivering precision at VML for Microsoft.
+                        Engineering scalable, high-performance web applications. I combine clean code with modern design principles to deliver seamless user experiences. Currently crafting solutions at GlobalLogic for Claro LATAM.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-300">
@@ -147,11 +148,14 @@ const Portfolio = () => {
                         >
                             View Projects <ArrowRight size={18} />
                         </button>
-                        <button
+                        <a
+                            href={resume}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className={`px-8 py-4 rounded-full border font-medium transition-all hover:scale-105 flex items-center justify-center gap-2 ${darkMode ? 'border-zinc-700 hover:bg-zinc-800 text-zinc-300' : 'border-zinc-300 hover:bg-zinc-100 text-zinc-700'}`}
                         >
-                            Download CV <Download size={18} />
-                        </button>
+                            View Resume <ExternalLink size={18} />
+                        </a>
                     </div>
                 </div>
 
@@ -180,15 +184,24 @@ const Portfolio = () => {
 
                         <div className="md:col-span-3 space-y-6 text-lg leading-relaxed">
                             <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                Hello! I'm Juan, a developer with a passion for clean code and pixel-perfect design. My journey began with a curiosity for how systems work, leading me to study <strong className="text-blue-500">System Analysis</strong>.
+                                I started programming in 2022 out of curiosity and a lifelong interest in computers. I began learning on my own by reading books like You Don’t Know JS, Clean Code, The Pragmatic Programmer, and Java by Deitel, which gave me a strong foundation in core concepts and good development practices from day one.
                             </p>
                             <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                Currently, I work at <strong className={darkMode ? 'text-white' : 'text-black'}>VML</strong>, creating digital solutions for Microsoft. My role sits at the intersection of technical precision and visual fidelity—whether I'm architecting a React component or ensuring an email campaign renders perfectly across legacy clients.
-                            </p>
-                            <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                I'm now pivoting my focus deeper into the <strong className="text-blue-500">React ecosystem</strong>, aiming to build more complex, scalable web applications that delight users.
+                                After that, I enrolled in several courses on HTML, CSS, and JavaScript, and that’s when I realized I wanted to take this seriously. I then joined a full-stack bootcamp, where I worked with Java for the backend, MySQL for databases, and React for the frontend.
                             </p>
                         </div>
+                    </div>
+
+                    <div className="mt-12 space-y-6 text-lg leading-relaxed">
+                        <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
+                            Later, I decided to deepen my technical path and started studying to become a Systems Analyst.
+                        </p>
+                        <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
+                            That journey led me to my first job as an Email Developer at VML for Microsoft. There, I strengthened my skills in HTML, CSS, and JavaScript, and learned a lot about teamwork, production workflows, quality standards, and tools like AEM, Marketo, and Salesforce Marketing Cloud. I also led an internal project —a .NET application— that significantly improved key metrics for Microsoft’s email development processes.
+                        </p>
+                        <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
+                            That growth opened the door to my current role as a Front-End Developer at GlobalLogic, where I work with React, TypeScript, and modern web technologies —including microfrontends— to build scalable, high-quality user interfaces.
+                        </p>
                     </div>
                 </div>
             </section>
