@@ -7,14 +7,12 @@ import {
     Sun,
     ArrowRight,
     ExternalLink,
-    Code2,
-    Layout,
-    Database,
-    Cpu,
+    Dumbbell,
     Menu,
     X,
     ChevronDown,
-    Download
+    Book,
+    DollarSign
 } from 'lucide-react';
 import profileImage from '../../assets/juan-4x4.jpg';
 import resume from '../../assets/juan-cv.jpeg';
@@ -216,38 +214,54 @@ const Portfolio = () => {
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Project 1 */}
                         <ProjectCard
-                            title="Nutri Fit"
-                            description="A full-featured e-commerce platform for nutritional supplements. Features a dynamic cart, user authentication, and responsive product filtering."
-                            tags={['React', 'Redux', 'Tailwind CSS', 'Stripe']}
+                            title="Buenas Lecturas"
+                            description="A Java desktop application designed with MVC, DAO, and service-layer patterns. It includes user login, session management, persistent storage with MySQL, and a Swing-based UI for browsing, adding, and managing books. Developed as part of my academic journey to strengthen architecture, clean code, and software design principles."
+                            tags={['JAVA', 'Spring Boot', 'MySQL', 'HTML', 'CSS', 'Maven', 'API Rest']}
                             darkMode={darkMode}
-                            icon={<Layout size={40} className="text-blue-500" />}
+                            icon={<Book size={40} className="text-orange-500" />}
+                            gitHubLink="https://github.com/saracco-juan/BuenasLecturas"
+                            externalLink="https://github.com/saracco-juan/BuenasLecturas"
+                            partnerLink=""
+                            partnerName=""
                         />
 
                         {/* Project 2 */}
                         <ProjectCard
-                            title="Óptica Saracco"
-                            description="Modern storefront for an optics business. Includes virtual try-on integration concepts and appointment scheduling features."
-                            tags={['React', 'Context API', 'Firebase', 'Framer Motion']}
+                            title="One Up Gym"
+                            description="A Laravel-based class scheduling system. It implements recurrent weekly classes, dynamic time-slot generation, database-driven persistence, user roles, and strict validation for overlapping bookings. Built with Blade templates, service-layer logic, and clean architecture principles."
+                            tags={['Laravel', 'Blade', 'MySQL', 'Team Project', 'API Rest']}
                             darkMode={darkMode}
-                            icon={<Code2 size={40} className="text-violet-500" />}
+                            icon={<Dumbbell size={40} className="text-blue-500" />}
+                            gitHubLink="https://github.com/marianogiardina/OneUpGym"
+                            externalLink="https://github.com/marianogiardina/OneUpGym"
+                            partnerLink="https://github.com/marianogiardina"
+                            partnerName="Mariano Giardina"
                         />
 
                         {/* Project 3 */}
                         <ProjectCard
-                            title="BFF-MOCK-AJUSTES"
-                            description="A robust Microfrontend implementation using Node.js and TypeScript to simulate backend responses for frontend development environments."
-                            tags={['Node.js', 'TypeScript', 'Express', 'Microservices']}
+                            title="Yenny Library"
+                            description="A full-featured library management platform built with Python, Flask, Jinja, and SQLite. It includes book inventory management, authors, categories, user authentication, and loan/return workflows. Designed with a clean MVC-like structure using Blueprints, service logic, and database models to ensure scalability and maintainability. Features secure session handling, form validation, and a modular template system powered by Jinja."
+                            tags={['Python', 'Flask', 'Jinja', 'SQLite', 'Team Project']}
                             darkMode={darkMode}
-                            icon={<Database size={40} className="text-emerald-500" />}
+                            icon={<Book size={40} className="text-emerald-500" />}
+                            gitHubLink="https://github.com/marianogiardina/yenny-ayms"
+                            externalLink="https://trello.com/b/DatryRwM/yenny-parcial-ayms"
+                            partnerLink="https://github.com/marianogiardina"
+                            partnerName="Mariano Giardina"
                         />
 
                         {/* Project 4 */}
                         <ProjectCard
-                            title="DavinciParking"
-                            description="A desktop parking management system built with Java. Handles slot allocation, billing calculation, and daily reporting."
-                            tags={['Java', 'Swing', 'MySQL', 'OOP']}
+                            title="Dolar App"
+                            description="A currency-tracking web app that consumes public APIs to display official, blue, MEP, and other dollar exchange rates in Argentina. Built with a component-based architecture, clean state management, reusable UI patterns, error handling, and loading states. Focused on improving API integration, formatting utilities, asynchronous flows, and responsive UI behaviors."
+                            tags={['HTML', 'CSS', 'JavaScript', 'API Rest']}
                             darkMode={darkMode}
-                            icon={<Cpu size={40} className="text-orange-500" />}
+                            icon={<DollarSign size={40} className="text-green-500" />}
+                            gitHubLink="https://github.com/juan-saracco/Dolar-APP"
+                            externalLink="https://dolar-app.netlify.app/"
+                            partnerLink=""
+                            partnerName=""
                         />
                     </div>
 
@@ -388,9 +402,9 @@ const Portfolio = () => {
 
 /* --- Sub-Components --- */
 
-const ProjectCard = ({ title, description, tags, darkMode, icon }) => (
+const ProjectCard = ({ title, description, tags, darkMode, icon, gitHubLink, externalLink, partnerLink, partnerName }) => (
     <div
-        className={`group relative p-8 rounded-2xl border transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${darkMode
+        className={`flex flex-col group relative p-8 rounded-2xl border transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${darkMode
             ? 'bg-zinc-900 border-zinc-800 hover:border-blue-500/50 hover:shadow-blue-900/10'
             : 'bg-white border-zinc-200 hover:border-blue-400 hover:shadow-blue-200/20'
             }`}
@@ -400,10 +414,10 @@ const ProjectCard = ({ title, description, tags, darkMode, icon }) => (
                 {icon}
             </div>
             <div className="flex gap-4">
-                <a href="#" className={`transition-colors ${darkMode ? 'text-zinc-400 hover:text-blue-400' : 'text-zinc-500 hover:text-blue-600'}`}>
+                <a href={gitHubLink} target="_blank" className={`transition-colors ${darkMode ? 'text-zinc-400 hover:text-blue-400' : 'text-zinc-500 hover:text-blue-600'}`}>
                     <Github size={20} />
                 </a>
-                <a href="#" className={`transition-colors ${darkMode ? 'text-zinc-400 hover:text-blue-400' : 'text-zinc-500 hover:text-blue-600'}`}>
+                <a href={externalLink} target="_blank" className={`transition-colors ${darkMode ? 'text-zinc-400 hover:text-blue-400' : 'text-zinc-500 hover:text-blue-600'}`}>
                     <ExternalLink size={20} />
                 </a>
             </div>
@@ -411,7 +425,7 @@ const ProjectCard = ({ title, description, tags, darkMode, icon }) => (
 
         <h3 className="text-xl font-bold mb-3 group-hover:text-blue-500 transition-colors">{title}</h3>
         <p className={`mb-6 text-sm leading-relaxed ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            {description}
+            {description} <br /> {partnerLink && <span className="text-blue-500">(This project was developed together with <a href={partnerLink} target="_blank">{partnerName}</a>)</span>}
         </p>
 
         <div className="flex flex-wrap gap-2 mt-auto">
