@@ -125,14 +125,14 @@ const Portfolio = () => {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                         </span>
-                        Available for new opportunities
+                        Big Tech fan here!
                     </div>
 
                     <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight mb-6 animate-fade-in-up delay-100">
                         <span className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
                             Juan Sebastian
                         </span> <br />
-                        Front-End Developer
+                        Software Engineer
                     </h1>
 
                     <p className={`text-xl md:text-2xl max-w-2xl leading-relaxed mb-10 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'} animate-fade-in-up delay-200`}>
@@ -265,27 +265,13 @@ const Portfolio = () => {
                         />
                     </div>
 
-                    <div className="mt-8 p-8 rounded-2xl border transition-colors hover:border-blue-500/50 group relative overflow-hidden"
-                        style={{
-                            backgroundColor: darkMode ? 'rgba(24, 24, 27, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-                            borderColor: darkMode ? '#27272a' : '#e4e4e7'
-                        }}>
-                        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                            <div>
-                                <h3 className="text-2xl font-bold mb-2">Enterprise Email Campaigns</h3>
-                                <p className={`max-w-2xl ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                                    Developed 50+ high-fidelity, responsive HTML emails for Microsoft campaigns using AEM and SFMC.
-                                    Ensured compatibility across 30+ email clients including Outlook Desktop and Gmail.
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
-                                <span className={`px-3 py-1 rounded-md text-sm font-medium ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-200 text-zinc-700'}`}>HTML/CSS</span>
-                                <span className={`px-3 py-1 rounded-md text-sm font-medium ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-200 text-zinc-700'}`}>MJML</span>
-                                <span className={`px-3 py-1 rounded-md text-sm font-medium ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-200 text-zinc-700'}`}>Litmus</span>
-                            </div>
-                        </div>
-                        <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-blue-500/10 to-transparent pointer-events-none"></div>
-                    </div>
+                    <HighlightCard
+                        title="Engineering Collaboration"
+                        description="Improved processes in QA, version control, internal tools, documentation, and cross-team development. Led the development of an internal .NET team tool used for tracking productivity and delivery metrics."
+                        tags={['C#', '.NET', 'Team Work']}
+                        darkMode={darkMode}
+                    />
+
                 </div>
             </section>
 
@@ -299,25 +285,37 @@ const Portfolio = () => {
                     <div className="space-y-12 relative border-l-2 border-zinc-200 dark:border-zinc-800 ml-3 md:ml-6 pl-8 md:pl-12">
 
                         <ExperienceItem
-                            role="Front-End / Email Developer"
-                            company="VML (Microsoft Client)"
-                            period="2022 - Present"
+                            role="Front-End Developer"
+                            company="GlobalLogic (Claro Client)"
+                            period="2025 - Present"
                             description={[
-                                "Developing responsive UI components for Microsoft web properties.",
-                                "Managing end-to-end email production cycles using SFMC and Marketo.",
-                                "Collaborating with design teams to ensure technical feasibility of layouts.",
-                                "Mentoring junior developers on HTML best practices."
+                                "Developing responsive UI components for Claro web properties.",
+                                "Collaborating with design teams to ensure technical feasibility of layouts."
                             ]}
                             current={true}
                             darkMode={darkMode}
                         />
 
                         <ExperienceItem
+                            role="Front-End Email Developer"
+                            company="VML (Microsoft Client)"
+                            period="2023 - 2025"
+                            description={[
+                                "Developing responsive UI components for Microsoft web properties.",
+                                "Managing end-to-end email production cycles using SFMC and Marketo.",
+                                "Collaborating with design teams to ensure technical feasibility of layouts.",
+                                "Mentoring junior developers on HTML best practices."
+                            ]}
+                            current={false}
+                            darkMode={darkMode}
+                        />
+
+                        <ExperienceItem
                             role="Freelance Web Developer"
                             company="Self-Employed"
-                            period="2020 - 2022"
+                            period="2022 - 2023"
                             description={[
-                                "Built custom React websites for small businesses (e.g. Óptica Saracco).",
+                                "Built custom React websites for small businesses (Óptica Saracco).",
                                 "Implemented SEO optimizations improving client visibility.",
                                 "Translated Figma designs into functional code."
                             ]}
@@ -328,13 +326,18 @@ const Portfolio = () => {
                         <ExperienceItem
                             role="Systems Analyst Student"
                             company="Academic Projects"
-                            period="2019 - 2022"
+                            period="2023 - Present"
                             description={[
                                 "Specialized in Object Oriented Programming (Java) and Database Design.",
-                                "Led team projects for final year capstone."
+                                "Led team projects for final year capstone.",
+                                "Developed academic projects using Java, Python, and SQL with clean MVC architectures.",
+                                "Built full-stack applications integrating authentication, CRUD operations, and relational database models.",
+                                "Designed and implemented ER diagrams, normalized schemas, and optimized SQL queries.",
+                                "Applied software engineering principles such as OOP, design patterns, and modular code organization.",
+                                "Led team-based capstone projects, coordinating tasks, version control, and documentation."
                             ]}
                             darkMode={darkMode}
-                            current={false}
+                            current={true}
                         />
                     </div>
                 </div>
@@ -354,13 +357,13 @@ const Portfolio = () => {
                             darkMode={darkMode}
                         />
                         <SkillCard
-                            title="Email Engineering"
-                            skills={['Salesforce MC', 'Adobe Experience Manager', 'Marketo', 'Litmus', 'MJML', 'Responsive HTML']}
+                            title="Complimentary Skills"
+                            skills={['Salesforce', 'Adobe Photoshop', 'Git / GitHub', 'CSS', 'AMPScript', 'Figma']}
                             darkMode={darkMode}
                         />
                         <SkillCard
-                            title="Backend & Tools"
-                            skills={['Node.js', 'Express', 'Java', 'Spring Boot', 'Git / GitHub', 'Figma']}
+                            title="Backend Core"
+                            skills={['Node.js', 'Express', 'Java', 'Spring Boot', 'PHP', 'Laravel', 'MySQL', 'PostgreSQL', 'Firebase']}
                             darkMode={darkMode}
                         />
                     </div>
@@ -370,22 +373,25 @@ const Portfolio = () => {
             {/* --- Contact Section --- */}
             <section id="contact" className="py-32 px-6 text-center">
                 <div className="max-w-2xl mx-auto">
-                    <h2 className="text-blue-500 font-medium mb-4">05. What's Next?</h2>
+                    <h2 className="text-blue-500 font-medium mb-4">05. Contact Me</h2>
                     <h3 className="text-4xl md:text-5xl font-bold mb-6">Let's Work Together</h3>
                     <p className={`text-lg mb-10 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                        I am currently looking for new opportunities to leverage my React and UI skills in a challenging environment. Whether you have a question or just want to say hi, my inbox is always open.
+                        I am always looking for new opportunities to leverage my skills in a challenging environment. Whether you have a question or just want to say hi, my inbox is always open.
                     </p>
 
+                    {/* Todo: Add email */}
                     <a
-                        href="mailto:hello@juansaracco.com"
+                        href="mailto:juan@juansaracco.com"
                         className="inline-flex items-center gap-3 px-8 py-4 rounded-full border border-blue-500 text-blue-500 hover:bg-blue-500/10 transition-colors text-lg font-medium"
+                        target="_blank"
+                        rel="noopener noreferrer"
                     >
                         <Mail size={20} /> Say Hello
                     </a>
 
                     <div className="mt-16 flex justify-center gap-8">
-                        <SocialLink href="#" icon={<Github size={24} />} label="GitHub" darkMode={darkMode} />
-                        <SocialLink href="#" icon={<Linkedin size={24} />} label="LinkedIn" darkMode={darkMode} />
+                        <SocialLink href="https://github.com/juan-saracco" icon={<Github size={24} />} label="GitHub" darkMode={darkMode} />
+                        <SocialLink href="https://www.linkedin.com/in/juan-sebastian-saracco/" icon={<Linkedin size={24} />} label="LinkedIn" darkMode={darkMode} />
                     </div>
                 </div>
             </section>
@@ -393,7 +399,7 @@ const Portfolio = () => {
             {/* --- Footer --- */}
             <footer className={`py-8 text-center text-sm ${darkMode ? 'text-zinc-600 bg-zinc-950' : 'text-zinc-400 bg-zinc-50'}`}>
                 <p>Designed & Built by Juan Sebastián Saracco</p>
-                <p className="mt-2 text-xs opacity-70">React · Tailwind CSS · Lucide Icons</p>
+                <p className="mt-2 text-xs opacity-70">React · Tailwind CSS · TypeScript</p>
             </footer>
 
         </div>
@@ -484,6 +490,8 @@ const SkillCard = ({ title, skills, darkMode }) => (
 const SocialLink = ({ href, icon, label, darkMode }) => (
     <a
         href={href}
+        target="_blank"
+        rel="noopener noreferrer"
         className={`group flex flex-col items-center gap-2 transition-colors ${darkMode ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'}`}
     >
         <div className="p-3 rounded-full transition-all group-hover:-translate-y-1 group-hover:shadow-lg bg-transparent group-hover:bg-blue-500 group-hover:text-white">
@@ -491,6 +499,31 @@ const SocialLink = ({ href, icon, label, darkMode }) => (
         </div>
         <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">{label}</span>
     </a>
+);
+
+const HighlightCard = ({ title, description, tags, darkMode }) => (
+    <div className="mt-8 p-8 rounded-2xl border transition-colors hover:border-blue-500/50 group relative overflow-hidden"
+        style={{
+            backgroundColor: darkMode ? 'rgba(24, 24, 27, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+            borderColor: darkMode ? '#27272a' : '#e4e4e7'
+        }}>
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+                <h3 className="text-2xl font-bold mb-2">{title}</h3>
+                <p className={`max-w-2xl ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    {description}
+                </p>
+            </div>
+            <div className="flex gap-2">
+                {tags.map((tag, i) => (
+                    <span key={i} className={`px-3 py-1 rounded-md text-sm font-medium ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-200 text-zinc-700'}`}>
+                        {tag}
+                    </span>
+                ))}
+            </div>
+        </div>
+        <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-blue-500/10 to-transparent pointer-events-none"></div>
+    </div>
 );
 
 export default Portfolio;
