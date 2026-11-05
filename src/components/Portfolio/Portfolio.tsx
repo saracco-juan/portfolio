@@ -1,536 +1,676 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 import {
+    ArrowUpRight,
+    Download,
     Github,
     Linkedin,
     Mail,
-    Moon,
-    Sun,
-    ArrowRight,
-    ExternalLink,
-    Dumbbell,
     Menu,
+    Moon,
+    Pause,
+    Play,
+    Plus,
+    Sun,
     X,
-    ChevronDown,
-    Book,
-    Car,
-    Megaphone,
-    DollarSign
 } from 'lucide-react';
 import profileImage from '../../assets/juan-4x4.jpg';
 import resume from '../../assets/juan-saracco-cv.pdf';
+import './portfolio.css';
+
+/* ------------------------------------------------------------------
+   Content
+------------------------------------------------------------------- */
+
+type Section = { id: string; label: string };
+
+const SECTIONS: Section[] = [
+    { id: 'notes', label: 'Liner notes' },
+    { id: 'side-a', label: 'Side A' },
+    { id: 'side-b', label: 'Side B' },
+    { id: 'gear', label: 'Gear' },
+    { id: 'contact', label: 'Contact' },
+];
+
+type Job = {
+    no: string;
+    role: string;
+    company: string;
+    period: string;
+    bullets: string[];
+    stack: string[];
+};
+
+const JOBS: Job[] = [
+    {
+        no: 'A1',
+        role: 'Software Engineer',
+        company: 'Hitachi Digital, client Claro',
+        period: 'Jun 2025 – now',
+        bullets: [
+            'Led the frontend of a new critical module in the re-engineering of a corporate ERP, with full ownership of the UI.',
+            'Migrated legacy interfaces to a scalable microfrontends architecture.',
+            'Mocked backend contracts so the team could develop locally without waiting on external services.',
+            "Added Storybook and unit testing to the team's workflow, and used AI tools to speed up development.",
+        ],
+        stack: ['React', 'TypeScript', 'Microfrontends', 'Storybook', 'Jenkins'],
+    },
+    {
+        no: 'A2',
+        role: 'Frontend Developer (Email Engineering)',
+        company: 'VML, Microsoft account',
+        period: '2023 – 2025',
+        bullets: [
+            'Built pixel-perfect HTML/CSS interfaces from designs, shipping 15+ deliveries per week for global campaigns reaching millions of users.',
+            'Solved cross-client and cross-device compatibility issues, cutting the production bug rate by 20%.',
+            "Led an internal .NET tool to track the team's productivity and delivery metrics.",
+            'Managed end-to-end production cycles with SFMC and Marketo, and mentored junior developers.',
+            'Documented internal processes, cutting onboarding for new developers from 3 to 2 months.',
+        ],
+        stack: ['HTML5', 'CSS3', 'SFMC', 'Marketo', '.NET'],
+    },
+    {
+        no: 'A3',
+        role: 'Freelance Web Developer',
+        company: 'Self-employed',
+        period: '2022 – 2023',
+        bullets: [
+            'Built custom React websites for small businesses, like Óptica Saracco.',
+            'Translated Figma designs into working code and improved client visibility with SEO.',
+        ],
+        stack: ['React', 'Figma', 'SEO'],
+    },
+];
+
+type Project = {
+    no: string;
+    title: string;
+    summary: string;
+    details: string[];
+    stack: string[];
+    code?: string;
+    live?: string;
+    partner?: { name: string; url: string };
+    bonus?: boolean;
+};
+
+const PROJECTS: Project[] = [
+    {
+        no: 'B1',
+        title: 'TD Autos',
+        summary: 'Helps people buy a used car without getting burned.',
+        details: [
+            'My thesis project. Buyers get a short diagnosis, profile-based recommendations and inspection and transfer checklists. Dealerships manage inventory under a monthly subscription, and admins onboard dealerships and supervise payments.',
+            'A monorepo with a Laravel REST API, a React web app and a React Native app that share pure TypeScript domain logic. GitHub Actions CI, a SonarCloud quality gate, Docker and automatic deploys on Vercel.',
+        ],
+        stack: ['React 19', 'TypeScript', 'React Native', 'Laravel 12', 'PostgreSQL', 'Docker', 'GitHub Actions'],
+        code: 'https://github.com/saracco-juan/td-autos',
+        live: 'https://td-autos.vercel.app',
+        partner: { name: 'Mariano Giardina', url: 'https://github.com/marianogiardina' },
+    },
+    {
+        no: 'B2',
+        title: 'J-gym',
+        summary: 'A mobile-first PWA to train around progressive overload.',
+        details: [
+            'Built with architecture discipline: pure domain logic in src/core, the repository pattern in src/infrastructure, and a UI that never talks to Supabase directly.',
+        ],
+        stack: ['Next.js 16', 'React 19', 'TypeScript', 'Tailwind', 'Supabase', 'Zustand', 'Jest'],
+        code: 'https://github.com/saracco-juan/J-gym',
+        live: 'https://juangym.vercel.app',
+    },
+    {
+        no: 'B3',
+        title: 'Buenas Lecturas',
+        summary: 'A virtual library to track your reading and write reviews.',
+        details: ['Book search through the Open Library API, user accounts with hashed passwords and a REST backend.'],
+        stack: ['Java', 'Spring Boot', 'BCrypt', 'REST API'],
+        code: 'https://github.com/saracco-juan/BuenasLecturas',
+    },
+    {
+        no: 'B4',
+        title: 'One Up Gym',
+        summary: 'Class scheduling for a gym, with recurring weekly classes.',
+        details: [
+            'Dynamic time-slot generation, user roles and strict validation against overlapping bookings, built with Blade templates and a service layer.',
+        ],
+        stack: ['Laravel', 'Blade', 'MySQL'],
+        code: 'https://github.com/marianogiardina/OneUpGym',
+        partner: { name: 'Mariano Giardina', url: 'https://github.com/marianogiardina' },
+    },
+    {
+        no: 'B5',
+        title: 'Dolar App',
+        summary: "Every Argentine dollar rate in one place: official, blue, MEP and more.",
+        details: [
+            'Consumes public APIs with loading and error states, formatting utilities and a responsive, component-based UI.',
+        ],
+        stack: ['JavaScript', 'HTML', 'CSS', 'REST API'],
+        code: 'https://github.com/juan-saracco/Dolar-APP',
+        live: 'https://dolar-app.netlify.app/',
+    },
+    {
+        no: 'Bonus',
+        title: 'Internal tooling at VML',
+        summary: "A .NET tool to track the email team's productivity and delivery.",
+        details: [
+            'Led its development and used it to improve QA, version control and documentation processes across the team.',
+        ],
+        stack: ['C#', '.NET'],
+        bonus: true,
+    },
+];
+
+const GEAR: { title: string; items: string[] }[] = [
+    {
+        title: 'Frontend',
+        items: ['React', 'TypeScript', 'Next.js', 'React Native', 'Microfrontends', 'Module Federation', 'Storybook', 'Tailwind CSS'],
+    },
+    {
+        title: 'Backend',
+        items: ['Node.js', 'Express', 'Java', 'Spring Boot', 'PHP', 'Laravel', 'PostgreSQL', 'Supabase', '.NET'],
+    },
+    {
+        title: 'Tools and quality',
+        items: ['Git and GitHub', 'GitHub Actions', 'Jenkins', 'Docker', 'Jest', 'SonarCloud', 'Figma', 'AI agents, spec first'],
+    },
+];
+
+const NAME_WORDS = ['Juan', 'Sebastián', 'Saracco'];
+
+/* ------------------------------------------------------------------
+   Hooks
+------------------------------------------------------------------- */
+
+const prefersReducedMotion = () =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function useReveal(root: RefObject<HTMLDivElement | null>) {
+    useEffect(() => {
+        const el = root.current;
+        if (!el) return;
+        const targets = el.querySelectorAll('[data-reveal]');
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-in');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            },
+            { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+        );
+        targets.forEach((t) => observer.observe(t));
+        return () => observer.disconnect();
+    }, [root]);
+}
+
+function useActiveSection() {
+    const [active, setActive] = useState('home');
+    useEffect(() => {
+        const onScroll = () => {
+            const y = window.scrollY + window.innerHeight * 0.35;
+            let current = 'home';
+            SECTIONS.forEach(({ id }) => {
+                const el = document.getElementById(id);
+                if (el && el.offsetTop <= y) current = id;
+            });
+            setActive(current);
+        };
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+    return active;
+}
+
+/* ------------------------------------------------------------------
+   Page
+------------------------------------------------------------------- */
 
 const Portfolio = () => {
-    const [darkMode, setDarkMode] = useState(true);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [activeSection, setActiveSection] = useState('home');
+    const rootRef = useRef<HTMLDivElement>(null);
+    const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+        typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+    );
+    const [playing, setPlaying] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [openJob, setOpenJob] = useState<string | null>('A1');
+    const [openProject, setOpenProject] = useState<string | null>('B1');
+    const active = useActiveSection();
 
-    // Toggle Dark Mode
-    const toggleTheme = () => {
-        setDarkMode(!darkMode);
-    };
+    useReveal(rootRef);
 
-    // Scroll Spy for Active Section
+    // The tonearm drops and the record starts once the page has settled.
     useEffect(() => {
-        const handleScroll = () => {
-            const sections = ['home', 'about', 'projects', 'experience', 'skills', 'contact'];
-            const scrollPosition = window.scrollY + 100;
-
-            for (const section of sections) {
-                const element = document.getElementById(section);
-                if (element && element.offsetTop <= scrollPosition && (element.offsetTop + element.offsetHeight) > scrollPosition) {
-                    setActiveSection(section);
-                }
-            }
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        if (prefersReducedMotion()) return;
+        const t = window.setTimeout(() => setPlaying(true), 900);
+        return () => window.clearTimeout(t);
     }, []);
 
-    // Smooth Scroll
-    const scrollTo = (id) => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-            setIsMenuOpen(false);
-        }
+    const scrollTo = (id: string) => {
+        document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+        setMenuOpen(false);
     };
 
-    return (
-        <div className={`min-h-screen transition-colors duration-300 font-sans ${darkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'}`}>
+    const activeLabel = SECTIONS.find((s) => s.id === active)?.label ?? 'Intro';
 
-            {/* --- Header / Navigation --- */}
-            <nav className={`fixed top-0 w-full z-50 border-b backdrop-blur-md transition-colors duration-300 ${darkMode ? 'bg-zinc-950/80 border-zinc-800' : 'bg-white/80 border-zinc-200'}`}>
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div
-                        className="text-xl font-bold tracking-tight cursor-pointer flex items-center gap-2 group"
-                        onClick={() => scrollTo('home')}
-                    >
-                        <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold group-hover:scale-105 transition-transform">JS</span>
-                        <span className="hidden sm:block">Juan Sebastián Saracco</span>
+    let charIndex = 0;
+
+    return (
+        <div
+            ref={rootRef}
+            className={`site has-js${playing ? ' is-playing' : ''}`}
+            data-theme={theme}
+        >
+            {/* --- Nav --- */}
+            <header className="nav">
+                <div className="wrap nav__inner">
+                    <button className="nav__brand" onClick={() => scrollTo('home')} aria-label="Back to top">
+                        <span className="nav__disc" aria-hidden="true" />
+                        <span>Juan Saracco</span>
+                    </button>
+
+                    <div className="now-playing" aria-live="polite">
+                        <span className="eq" aria-hidden="true">
+                            <span />
+                            <span />
+                            <span />
+                            <span />
+                        </span>
+                        <span>Now playing:</span>
+                        <span key={activeLabel} className="now-playing__title is-changing">
+                            {activeLabel}
+                        </span>
                     </div>
 
-                    {/* Desktop Nav */}
-                    <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-                        {['About', 'Projects', 'Experience', 'Skills', 'Contact'].map((item) => (
+                    <nav className="nav__links" aria-label="Sections">
+                        {SECTIONS.map((s) => (
                             <button
-                                key={item}
-                                onClick={() => scrollTo(item.toLowerCase())}
-                                className={`hover:text-blue-500 transition-colors ${activeSection === item.toLowerCase() ? 'text-blue-500' : (darkMode ? 'text-zinc-400' : 'text-zinc-600')}`}
+                                key={s.id}
+                                className="nav__link"
+                                aria-current={active === s.id ? 'true' : undefined}
+                                onClick={() => scrollTo(s.id)}
                             >
-                                {item}
+                                {s.label}
                             </button>
                         ))}
-                        <div className="w-px h-4 bg-zinc-700 mx-2"></div>
-                        <button
-                            onClick={toggleTheme}
-                            className={`p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-zinc-200 text-zinc-600'}`}
-                        >
-                            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-                        </button>
-                    </div>
+                    </nav>
 
-                    {/* Mobile Menu Toggle */}
-                    <div className="md:hidden flex items-center gap-4">
-                        <button onClick={toggleTheme} className={darkMode ? 'text-zinc-400' : 'text-zinc-600'}>
-                            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-                        </button>
-                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={darkMode ? 'text-zinc-100' : 'text-zinc-900'}>
-                            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                        </button>
-                    </div>
+                    <button
+                        className="icon-btn"
+                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                    >
+                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
+
+                    <button
+                        className="icon-btn nav__menu-btn"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        aria-expanded={menuOpen}
+                        aria-label="Menu"
+                    >
+                        {menuOpen ? <X size={18} /> : <Menu size={18} />}
+                    </button>
                 </div>
 
-                {/* Mobile Nav Dropdown */}
-                {isMenuOpen && (
-                    <div className={`md:hidden absolute w-full border-b ${darkMode ? 'bg-zinc-950 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                        <div className="flex flex-col p-6 gap-4">
-                            {['About', 'Projects', 'Experience', 'Skills', 'Contact'].map((item) => (
-                                <button
-                                    key={item}
-                                    onClick={() => scrollTo(item.toLowerCase())}
-                                    className="text-left py-2 text-lg font-medium hover:text-blue-500"
-                                >
-                                    {item}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                {menuOpen && (
+                    <nav className="mobile-menu" aria-label="Sections">
+                        {SECTIONS.map((s) => (
+                            <button key={s.id} className="nav__link" onClick={() => scrollTo(s.id)}>
+                                {s.label}
+                            </button>
+                        ))}
+                    </nav>
                 )}
-            </nav>
+            </header>
 
-            {/* --- Hero Section --- */}
-            <section id="home" className="pt-32 pb-20 px-6 min-h-screen flex flex-col justify-center">
-                <div className="max-w-5xl mx-auto w-full">
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight mb-6 animate-fade-in-up delay-100">
-                        <span className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
-                            Juan Sebastián
-                        </span> <br />
-                        Software Engineer
-                    </h1>
+            <main>
+                {/* --- Hero --- */}
+                <section id="home" className="hero">
+                    <div className="wrap hero__grid">
+                        <div>
+                            <h1 className="hero__name" aria-label="Juan Sebastián Saracco">
+                                {NAME_WORDS.map((word) => (
+                                    <span className="hero__word" key={word} aria-hidden="true">
+                                        {word.split('').map((ch, i) => (
+                                            <span
+                                                key={i}
+                                                className="hero__char"
+                                                style={{ '--i': charIndex++ } as CSSProperties}
+                                            >
+                                                {ch}
+                                            </span>
+                                        ))}
+                                    </span>
+                                ))}
+                            </h1>
 
-                    <p className={`text-xl md:text-2xl max-w-2xl leading-relaxed mb-10 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'} animate-fade-in-up delay-200`}>
-                        Frontend-focused engineer (React, TypeScript, microfrontends) who builds products end to end, from the UI to the API and the CI pipeline. Currently leading the frontend of an ERP module at Hitachi Digital (ex GlobalLogic) for Claro.
-                    </p>
+                            <p className="hero__role">
+                                <strong>Software Engineer at Hitachi Digital.</strong> React and TypeScript, from pixel to
+                                production.
+                            </p>
 
-                    <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-300">
-                        <button
-                            onClick={() => scrollTo('projects')}
-                            className="px-8 py-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all hover:scale-105 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
-                        >
-                            View Projects <ArrowRight size={18} />
-                        </button>
-                        <a
-                            href={resume}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`px-8 py-4 rounded-full border font-medium transition-all hover:scale-105 flex items-center justify-center gap-2 ${darkMode ? 'border-zinc-700 hover:bg-zinc-800 text-zinc-300' : 'border-zinc-300 hover:bg-zinc-100 text-zinc-700'}`}
-                        >
-                            View Resume <ExternalLink size={18} />
-                        </a>
-                    </div>
-                </div>
-
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-50">
-                    <ChevronDown size={24} />
-                </div>
-            </section>
-
-            {/* --- About Section --- */}
-            <section id="about" className={`py-24 px-6 ${darkMode ? 'bg-zinc-900/30' : 'bg-zinc-100/50'}`}>
-                <div className="max-w-4xl mx-auto">
-                    <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-                        <span className="text-blue-500">01.</span> About Me
-                    </h2>
-
-                    <div className="grid md:grid-cols-5 gap-12 items-start">
-                        <div className="md:col-span-2">
-                            <div className="aspect-square rounded-2xl overflow-hidden bg-zinc-800 relative group">
-                                {/* Placeholder for Profile Image */}
-                                <div className="absolute inset-0 opacity-20 group-hover:opacity-10 transition-opacity"></div>
-                                <div className="w-full flex items-center justify-center">
-                                    <img src={profileImage} alt="Profile" className="w-full object-cover" />
-                                </div>
+                            <div className="hero__actions">
+                                <button className="btn btn--primary" onClick={() => scrollTo('side-b')}>
+                                    Listen to Side B
+                                </button>
+                                <a className="btn" href={resume} target="_blank" rel="noopener noreferrer">
+                                    <Download size={18} /> Download CV
+                                </a>
                             </div>
                         </div>
 
-                        <div className="md:col-span-3 space-y-6 text-lg leading-relaxed">
-                            <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                I'm a Software Engineer at Hitachi Digital (ex GlobalLogic), where I own the frontend of a critical module in Claro's ERP re-engineering: React, TypeScript, microfrontends, Storybook and unit testing.
+                        <Turntable playing={playing} onToggle={() => setPlaying(!playing)} />
+                    </div>
+                </section>
+
+                {/* --- Liner notes --- */}
+                <section id="notes" className="section">
+                    <div className="wrap notes">
+                        <div className="sleeve" data-reveal tabIndex={0} aria-label="Photo of Juan">
+                            <div className="sleeve__record" aria-hidden="true" />
+                            <div className="sleeve__cover">
+                                <img src={profileImage} alt="Juan Sebastián Saracco" />
+                            </div>
+                        </div>
+
+                        <div className="notes__text">
+                            <h2 className="section__title" data-reveal style={{ marginBottom: 32 }}>
+                                Liner notes
+                            </h2>
+                            <p data-reveal style={{ '--d': 1 } as CSSProperties}>
+                                I'm a Software Engineer at Hitachi Digital, where I own the frontend of a critical module in
+                                Claro's ERP re-engineering.
                             </p>
-                            <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                Before that, at VML, I built pixel-perfect interfaces for Microsoft campaigns reaching millions of users, and led an internal .NET tool that improved the team's delivery metrics.
+                            <p data-reveal style={{ '--d': 2 } as CSSProperties}>
+                                Before that, at VML, I built pixel-perfect interfaces for Microsoft campaigns reaching
+                                millions of users, and led an internal .NET tool that improved the team's delivery metrics.
+                                Outside work I ship full products end to end, with CI, quality gates and automatic deploys.
                             </p>
-                            <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                Outside work I ship full products end to end, like TD Autos, my thesis at Escuela Da Vinci, with CI, quality gates and automatic deploys.
+                            <p className="notes__meta" data-reveal style={{ '--d': 3 } as CSSProperties}>
+                                Systems Analysis at Escuela Da Vinci, 2024 to 2026. Based in Buenos Aires, Argentine and
+                                Italian citizen.
                             </p>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* --- Projects Section --- */}
-            <section id="projects" className="py-24 px-6">
-                <div className="max-w-6xl mx-auto">
-                    <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-                        <span className="text-blue-500">02.</span> Featured Projects
-                    </h2>
+                {/* --- Side A: work --- */}
+                <section id="side-a" className="section">
+                    <div className="wrap">
+                        <div className="section__head" data-reveal>
+                            <h2 className="section__title">
+                                Side A<span className="section__sub">Work</span>
+                            </h2>
+                            <p className="section__aside">Three jobs, from email campaigns to an enterprise ERP.</p>
+                        </div>
 
-                    <div className="grid md:grid-cols-2 gap-8">
-                        {/* Project 1 */}
-                        <ProjectCard
-                            title="TD Autos"
-                            description="Thesis project. Helps used-car buyers decide safely (short diagnosis, profile-based recommendations, inspection and transfer checklists), lets dealerships manage inventory under a monthly subscription, and gives admins tools to onboard dealerships and supervise payments. Monorepo with a Laravel REST API, a React web SPA and a React Native app sharing pure TypeScript domain logic, plus GitHub Actions CI, a SonarCloud quality gate, Docker and automatic deploys on Vercel."
-                            tags={['React 19', 'TypeScript', 'React Native', 'Laravel 12', 'PostgreSQL', 'GitHub Actions', 'Docker']}
-                            darkMode={darkMode}
-                            icon={<Car size={40} className="text-blue-500" />}
-                            gitHubLink="https://github.com/saracco-juan/td-autos"
-                            externalLink="https://td-autos.vercel.app"
-                            partnerLink="https://github.com/marianogiardina"
-                            partnerName="Mariano Giardina"
-                        />
-
-                        {/* Project 2 */}
-                        <ProjectCard
-                            title="J-gym"
-                            description="Mobile-first PWA to track gym workouts around progressive overload. Built with architecture discipline: pure domain logic in src/core, the repository pattern in src/infrastructure, and a UI that never touches Supabase directly."
-                            tags={['Next.js 16', 'React 19', 'TypeScript', 'Tailwind', 'Supabase', 'Zustand', 'Jest']}
-                            darkMode={darkMode}
-                            icon={<Dumbbell size={40} className="text-emerald-500" />}
-                            gitHubLink="https://github.com/saracco-juan/J-gym"
-                            externalLink="https://juangym.vercel.app"
-                            partnerLink=""
-                            partnerName=""
-                        />
-
-                        {/* Project 3 */}
-                        <ProjectCard
-                            title="La Silbatina"
-                            description="Anonymous message wall for Argentine football fans: each fan gets 5 'whistles' to vote, and the most whistled message tops the board. No signup, only a hashed cookie/IP is stored (privacy by design), plus admin moderation."
-                            tags={['Node.js', 'PostgreSQL', 'Privacy by design']}
-                            darkMode={darkMode}
-                            icon={<Megaphone size={40} className="text-orange-500" />}
-                            gitHubLink="https://github.com/saracco-juan/silbatina"
-                            externalLink="https://github.com/saracco-juan/silbatina"
-                            partnerLink=""
-                            partnerName=""
-                        />
-
-                        {/* Project 4 */}
-                        <ProjectCard
-                            title="Buenas Lecturas"
-                            description="Virtual library to track your reading and write reviews, with book search via Open Library."
-                            tags={['Java', 'Spring Boot', 'BCrypt', 'REST API']}
-                            darkMode={darkMode}
-                            icon={<Book size={40} className="text-violet-500" />}
-                            gitHubLink="https://github.com/saracco-juan/BuenasLecturas"
-                            externalLink="https://github.com/saracco-juan/BuenasLecturas"
-                            partnerLink=""
-                            partnerName=""
-                        />
-
-                        {/* Project 5 */}
-                        <ProjectCard
-                            title="One Up Gym"
-                            description="A Laravel-based class scheduling system. It implements recurrent weekly classes, dynamic time-slot generation, database-driven persistence, user roles, and strict validation for overlapping bookings. Built with Blade templates, service-layer logic, and clean architecture principles."
-                            tags={['Laravel', 'Blade', 'MySQL', 'Team Project', 'API Rest']}
-                            darkMode={darkMode}
-                            icon={<Dumbbell size={40} className="text-blue-500" />}
-                            gitHubLink="https://github.com/marianogiardina/OneUpGym"
-                            externalLink="https://github.com/marianogiardina/OneUpGym"
-                            partnerLink="https://github.com/marianogiardina"
-                            partnerName="Mariano Giardina"
-                        />
-
-                        {/* Project 6 */}
-                        <ProjectCard
-                            title="Dolar App"
-                            description="A currency-tracking web app that consumes public APIs to display official, blue, MEP, and other dollar exchange rates in Argentina. Built with a component-based architecture, clean state management, reusable UI patterns, error handling, and loading states. Focused on improving API integration, formatting utilities, asynchronous flows, and responsive UI behaviors."
-                            tags={['HTML', 'CSS', 'JavaScript', 'API Rest']}
-                            darkMode={darkMode}
-                            icon={<DollarSign size={40} className="text-green-500" />}
-                            gitHubLink="https://github.com/juan-saracco/Dolar-APP"
-                            externalLink="https://dolar-app.netlify.app/"
-                            partnerLink=""
-                            partnerName=""
-                        />
+                        <ol className="tracklist">
+                            {JOBS.map((job, i) => {
+                                const open = openJob === job.no;
+                                return (
+                                    <li
+                                        key={job.no}
+                                        className={`track${open ? ' is-open' : ''}`}
+                                        data-reveal
+                                        style={{ '--d': i } as CSSProperties}
+                                    >
+                                        <button
+                                            className="track__row"
+                                            aria-expanded={open}
+                                            aria-controls={`panel-${job.no}`}
+                                            onClick={() => setOpenJob(open ? null : job.no)}
+                                        >
+                                            <span className="track__no">{job.no}</span>
+                                            <span className="track__title">
+                                                {job.role}
+                                                <span className="track__meta">
+                                                    {job.company}
+                                                    <span className="track__period-inline">, {job.period}</span>
+                                                </span>
+                                            </span>
+                                            <span className="track__period">{job.period}</span>
+                                            <span className="track__toggle" aria-hidden="true">
+                                                <Plus size={16} />
+                                            </span>
+                                        </button>
+                                        <div className="track__panel" id={`panel-${job.no}`}>
+                                            <div className="track__panel-inner">
+                                                <div className="track__body">
+                                                    <ul>
+                                                        {job.bullets.map((b) => (
+                                                            <li key={b}>{b}</li>
+                                                        ))}
+                                                    </ul>
+                                                    <ul className="stack" aria-label="Stack">
+                                                        {job.stack.map((s) => (
+                                                            <li key={s}>{s}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ol>
                     </div>
+                </section>
 
-                    <HighlightCard
-                        title="Internal tooling at VML"
-                        description="Led the development of an internal .NET tool used by the email team to track productivity and delivery metrics, and improved processes in QA, version control and documentation."
-                        tags={['C#', '.NET', 'Team Work']}
-                        darkMode={darkMode}
-                    />
+                {/* --- Side B: projects --- */}
+                <section id="side-b" className="section">
+                    <div className="wrap">
+                        <div className="section__head" data-reveal>
+                            <h2 className="section__title">
+                                Side B<span className="section__sub">Projects</span>
+                            </h2>
+                            <p className="section__aside">Things I built outside work. Open a track to see the details.</p>
+                        </div>
 
-                </div>
-            </section>
-
-            {/* --- Experience Section --- */}
-            <section id="experience" className={`py-24 px-6 ${darkMode ? 'bg-zinc-900/30' : 'bg-zinc-100/50'}`}>
-                <div className="max-w-3xl mx-auto">
-                    <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-                        <span className="text-blue-500">03.</span> Experience
-                    </h2>
-
-                    <div className="space-y-12 relative border-l-2 border-zinc-200 dark:border-zinc-800 ml-3 md:ml-6 pl-8 md:pl-12">
-
-                        <ExperienceItem
-                            role="Software Engineer"
-                            company="Hitachi Digital, ex GlobalLogic (Claro Client)"
-                            period="Jun 2025 - Present"
-                            description={[
-                                "Led the frontend of a new critical module in the re-engineering of a corporate ERP, with full ownership of the UI.",
-                                "Migrated legacy interfaces to a scalable microfrontends architecture.",
-                                "Mocked backend contracts so the team could develop locally without waiting on external services.",
-                                "Added Storybook and unit testing to the team's workflow, and used AI tools to speed up development."
-                            ]}
-                            current={true}
-                            darkMode={darkMode}
-                        />
-
-                        <ExperienceItem
-                            role="Frontend Developer (Email Engineering)"
-                            company="VML (Microsoft Client)"
-                            period="2023 - 2025"
-                            description={[
-                                "Built pixel-perfect HTML/CSS interfaces from designs, shipping 15+ deliveries per week for global campaigns reaching millions of users.",
-                                "Solved cross-client and cross-device compatibility issues, cutting the production bug rate by 20%.",
-                                "Led an internal .NET tool to track the team's productivity and delivery metrics.",
-                                "Managed end-to-end production cycles with SFMC and Marketo, and mentored junior developers.",
-                                "Documented internal processes, cutting onboarding for new developers from 3 to 2 months."
-                            ]}
-                            current={false}
-                            darkMode={darkMode}
-                        />
-
-                        <ExperienceItem
-                            role="Freelance Web Developer"
-                            company="Self-Employed"
-                            period="2022 - 2023"
-                            description={[
-                                "Built custom React websites for small businesses (Óptica Saracco).",
-                                "Implemented SEO optimizations improving client visibility.",
-                                "Translated Figma designs into functional code."
-                            ]}
-                            darkMode={darkMode}
-                            current={false}
-                        />
-
-                        <ExperienceItem
-                            role="Systems Analysis Student"
-                            company="Escuela Da Vinci"
-                            period="2024 - 2026"
-                            description={[
-                                "Thesis: TD Autos, a full product with web, mobile and API, built end to end in a team of two.",
-                                "Built full-stack academic projects in Java, Python and PHP with clean MVC architectures, authentication and relational databases.",
-                                "Designed ER diagrams, normalized schemas and optimized SQL queries.",
-                                "Coordinated team projects: task planning, version control and documentation."
-                            ]}
-                            darkMode={darkMode}
-                            current={true}
-                        />
+                        <ol className="tracklist">
+                            {PROJECTS.map((p, i) => {
+                                const open = openProject === p.no;
+                                return (
+                                    <li
+                                        key={p.no}
+                                        className={`track${open ? ' is-open' : ''}${p.bonus ? ' track--bonus' : ''}`}
+                                        data-reveal
+                                        style={{ '--d': i } as CSSProperties}
+                                    >
+                                        <button
+                                            className="track__row"
+                                            aria-expanded={open}
+                                            aria-controls={`panel-${p.no}`}
+                                            onClick={() => setOpenProject(open ? null : p.no)}
+                                        >
+                                            <span className="track__no">{p.no}</span>
+                                            <span className="track__title">
+                                                {p.title}
+                                                <span className="track__meta">{p.summary}</span>
+                                            </span>
+                                            <span className="track__period">{p.bonus ? 'Hidden track' : ''}</span>
+                                            <span className="track__toggle" aria-hidden="true">
+                                                <Plus size={16} />
+                                            </span>
+                                        </button>
+                                        <div className="track__panel" id={`panel-${p.no}`}>
+                                            <div className="track__panel-inner">
+                                                <div className="track__body">
+                                                    {p.details.map((d) => (
+                                                        <p key={d}>{d}</p>
+                                                    ))}
+                                                    {p.partner && (
+                                                        <p>
+                                                            Built with{' '}
+                                                            <a
+                                                                className="text-link"
+                                                                href={p.partner.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                            >
+                                                                {p.partner.name}
+                                                            </a>
+                                                            .
+                                                        </p>
+                                                    )}
+                                                    <ul className="stack" aria-label="Stack">
+                                                        {p.stack.map((s) => (
+                                                            <li key={s}>{s}</li>
+                                                        ))}
+                                                    </ul>
+                                                    {(p.code || p.live) && (
+                                                        <div className="track__links">
+                                                            {p.live && (
+                                                                <a
+                                                                    className="text-link"
+                                                                    href={p.live}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    Open the live app <ArrowUpRight size={16} />
+                                                                </a>
+                                                            )}
+                                                            {p.code && (
+                                                                <a
+                                                                    className="text-link"
+                                                                    href={p.code}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    <Github size={16} /> See the code
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ol>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* --- Skills Section --- */}
-            <section id="skills" className="py-24 px-6">
-                <div className="max-w-5xl mx-auto">
-                    <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-                        <span className="text-blue-500">04.</span> Technical Skills
-                    </h2>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        <SkillCard
-                            title="Front-End Core"
-                            skills={['React', 'TypeScript', 'JavaScript (ES6+)', 'Next.js', 'React Native', 'Microfrontends', 'Module Federation', 'Storybook', 'HTML5', 'CSS3/SASS', 'Tailwind CSS']}
-                            darkMode={darkMode}
-                        />
-                        <SkillCard
-                            title="Tools & Quality"
-                            skills={['Git / GitHub', 'GitHub Actions', 'Jenkins', 'Docker', 'Jest', 'SonarCloud', 'Figma', 'SFMC / AMPScript', 'AI agents for development']}
-                            darkMode={darkMode}
-                        />
-                        <SkillCard
-                            title="Backend Core"
-                            skills={['Node.js', 'Express', 'Java', 'Spring Boot', 'PHP', 'Laravel', 'PostgreSQL', 'Supabase', 'MySQL', 'Firebase', '.NET']}
-                            darkMode={darkMode}
-                        />
+                {/* --- Gear --- */}
+                <section id="gear" className="section">
+                    <div className="wrap">
+                        <div className="section__head" data-reveal>
+                            <h2 className="section__title">Gear</h2>
+                            <p className="section__aside">What I record with, day to day.</p>
+                        </div>
+                        <div className="credits">
+                            {GEAR.map((g, i) => (
+                                <div key={g.title} data-reveal style={{ '--d': i } as CSSProperties}>
+                                    <h3>{g.title}</h3>
+                                    <ul>
+                                        {g.items.map((item) => (
+                                            <li key={item}>{item}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* --- Contact Section --- */}
-            <section id="contact" className="py-32 px-6 text-center">
-                <div className="max-w-2xl mx-auto">
-                    <h2 className="text-blue-500 font-medium mb-4">05. Contact Me</h2>
-                    <h3 className="text-4xl md:text-5xl font-bold mb-6">Let's Work Together</h3>
-                    <p className={`text-lg mb-10 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                        I am always looking for new opportunities to leverage my skills in a challenging environment. Whether you have a question or just want to say hi, my inbox is always open.
-                    </p>
-
-                    <a
-                        href="mailto:juansaracco1212@gmail.com"
-                        className="inline-flex items-center gap-3 px-8 py-4 rounded-full border border-blue-500 text-blue-500 hover:bg-blue-500/10 transition-colors text-lg font-medium"
-                    >
-                        <Mail size={20} /> Say Hello
-                    </a>
-
-                    <div className="mt-16 flex justify-center gap-8">
-                        <SocialLink href="https://github.com/saracco-juan" icon={<Github size={24} />} label="GitHub" darkMode={darkMode} />
-                        <SocialLink href="https://www.linkedin.com/in/juan-saracco/" icon={<Linkedin size={24} />} label="LinkedIn" darkMode={darkMode} />
+                {/* --- Contact --- */}
+                <section id="contact" className="contact">
+                    <div className="wrap">
+                        <h2 className="section__title" data-reveal style={{ marginBottom: 20 }}>
+                            Let's talk
+                        </h2>
+                        <p className="contact__lead" data-reveal style={{ '--d': 1 } as CSSProperties}>
+                            Got a role, a project or a question? Write to me and I'll get back to you.
+                        </p>
+                        <a
+                            className="contact__mail"
+                            href="mailto:juansaracco1212@gmail.com"
+                            data-reveal
+                            style={{ '--d': 2 } as CSSProperties}
+                        >
+                            juansaracco1212@gmail.com
+                        </a>
+                        <div className="contact__links" data-reveal style={{ '--d': 3 } as CSSProperties}>
+                            <a className="icon-btn" href="mailto:juansaracco1212@gmail.com" aria-label="Email">
+                                <Mail size={18} />
+                            </a>
+                            <a
+                                className="icon-btn"
+                                href="https://github.com/saracco-juan"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="GitHub"
+                            >
+                                <Github size={18} />
+                            </a>
+                            <a
+                                className="icon-btn"
+                                href="https://www.linkedin.com/in/juan-saracco/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="LinkedIn"
+                            >
+                                <Linkedin size={18} />
+                            </a>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </main>
 
-            {/* --- Footer --- */}
-            <footer className={`py-8 text-center text-sm ${darkMode ? 'text-zinc-600 bg-zinc-950' : 'text-zinc-400 bg-zinc-50'}`}>
-                <p>Designed & Built by Juan Sebastián Saracco</p>
-                <p className="mt-2 text-xs opacity-70">React · TypeScript · Tailwind CSS · Vite</p>
+            <footer className="footer">
+                <div className="wrap">Designed and built by Juan Sebastián Saracco with React and TypeScript.</div>
             </footer>
-
         </div>
     );
 };
 
-/* --- Sub-Components --- */
+/* ------------------------------------------------------------------
+   Turntable
+------------------------------------------------------------------- */
 
-const ProjectCard = ({ title, description, tags, darkMode, icon, gitHubLink, externalLink, partnerLink, partnerName }) => (
-    <div
-        className={`flex flex-col group relative p-8 rounded-2xl border transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${darkMode
-            ? 'bg-zinc-900 border-zinc-800 hover:border-blue-500/50 hover:shadow-blue-900/10'
-            : 'bg-white border-zinc-200 hover:border-blue-400 hover:shadow-blue-200/20'
-            }`}
-    >
-        <div className="flex justify-between items-start mb-6">
-            <div className={`p-3 rounded-lg ${darkMode ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
-                {icon}
-            </div>
-            <div className="flex gap-4">
-                <a href={gitHubLink} target="_blank" className={`transition-colors ${darkMode ? 'text-zinc-400 hover:text-blue-400' : 'text-zinc-500 hover:text-blue-600'}`}>
-                    <Github size={20} />
-                </a>
-                <a href={externalLink} target="_blank" className={`transition-colors ${darkMode ? 'text-zinc-400 hover:text-blue-400' : 'text-zinc-500 hover:text-blue-600'}`}>
-                    <ExternalLink size={20} />
-                </a>
-            </div>
-        </div>
-
-        <h3 className="text-xl font-bold mb-3 group-hover:text-blue-500 transition-colors">{title}</h3>
-        <p className={`mb-6 text-sm leading-relaxed ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            {description} <br /> {partnerLink && <span className="text-blue-500">(This project was developed together with <a href={partnerLink} target="_blank">{partnerName}</a>)</span>}
-        </p>
-
-        <div className="flex flex-wrap gap-2 mt-auto">
-            {tags.map((tag, i) => (
-                <span
-                    key={i}
-                    className={`text-xs px-3 py-1 rounded-full font-medium ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
-                        }`}
-                >
-                    {tag}
-                </span>
-            ))}
-        </div>
-    </div>
-);
-
-const ExperienceItem = ({ role, company, period, description, current, darkMode }) => (
-    <div className="relative">
-        <span className={`absolute -left-[41px] md:-left-[57px] top-1 h-5 w-5 rounded-full border-4 ${current
-            ? 'bg-blue-500 border-blue-900'
-            : (darkMode ? 'bg-zinc-950 border-zinc-700' : 'bg-white border-zinc-300')
-            }`}></span>
-
-        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between mb-2">
-            <h3 className="text-xl font-bold">{role}</h3>
-            <span className={`text-sm font-mono ${darkMode ? 'text-zinc-500' : 'text-zinc-500'}`}>{period}</span>
-        </div>
-
-        <h4 className="text-blue-500 font-medium mb-4">{company}</h4>
-
-        <ul className={`space-y-2 list-disc list-inside ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            {description.map((item, index) => (
-                <li key={index} className="text-sm md:text-base">{item}</li>
-            ))}
-        </ul>
-    </div>
-);
-
-const SkillCard = ({ title, skills, darkMode }) => (
-    <div className={`p-6 rounded-2xl ${darkMode ? 'bg-zinc-900/50' : 'bg-white border border-zinc-100'}`}>
-        <h3 className="text-lg font-bold mb-4 text-blue-500">{title}</h3>
-        <div className="flex flex-wrap gap-2">
-            {skills.map((skill) => (
-                <span
-                    key={skill}
-                    className={`px-3 py-2 text-sm rounded-md transition-all hover:scale-105 cursor-default ${darkMode ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                        }`}
-                >
-                    {skill}
-                </span>
-            ))}
-        </div>
-    </div>
-);
-
-const SocialLink = ({ href, icon, label, darkMode }) => (
-    <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`group flex flex-col items-center gap-2 transition-colors ${darkMode ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'}`}
-    >
-        <div className="p-3 rounded-full transition-all group-hover:-translate-y-1 group-hover:shadow-lg bg-transparent group-hover:bg-blue-500 group-hover:text-white">
-            {icon}
-        </div>
-        <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">{label}</span>
-    </a>
-);
-
-const HighlightCard = ({ title, description, tags, darkMode }) => (
-    <div className="mt-8 p-8 rounded-2xl border transition-colors hover:border-blue-500/50 group relative overflow-hidden"
-        style={{
-            backgroundColor: darkMode ? 'rgba(24, 24, 27, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-            borderColor: darkMode ? '#27272a' : '#e4e4e7'
-        }}>
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div>
-                <h3 className="text-2xl font-bold mb-2">{title}</h3>
-                <p className={`max-w-2xl ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                    {description}
-                </p>
-            </div>
-            <div className="flex gap-2">
-                {tags.map((tag, i) => (
-                    <span key={i} className={`px-3 py-1 rounded-md text-sm font-medium ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-200 text-zinc-700'}`}>
-                        {tag}
+const Turntable = ({ playing, onToggle }: { playing: boolean; onToggle: () => void }) => (
+    <div className="deck">
+        <div className="platter">
+            <button
+                className="record"
+                onClick={onToggle}
+                aria-label={playing ? 'Stop the record' : 'Play the record'}
+                aria-pressed={playing}
+            >
+                <span className="record__disc" aria-hidden="true">
+                    <span className="record__label">
+                        <span className="record__label-text">
+                            <span className="record__label-mono">JS</span>
+                            <span className="record__label-small">Side A</span>
+                        </span>
                     </span>
-                ))}
-            </div>
+                    <span className="record__hole" />
+                </span>
+                <span className="record__sheen" aria-hidden="true" />
+            </button>
         </div>
-        <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-blue-500/10 to-transparent pointer-events-none"></div>
+
+        <div className="tonearm" aria-hidden="true">
+            <span className="tonearm__pivot" />
+            <span className="tonearm__arm" />
+            <span className="tonearm__head" />
+        </div>
+
+        <div className="deck__controls">
+            <span className="deck__led" aria-hidden="true" />
+            <button
+                className="deck__play"
+                onClick={onToggle}
+                aria-label={playing ? 'Pause' : 'Play'}
+                aria-pressed={playing}
+            >
+                {playing ? <Pause size={18} /> : <Play size={18} />}
+            </button>
+        </div>
     </div>
 );
 
