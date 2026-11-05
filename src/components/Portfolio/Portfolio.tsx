@@ -12,7 +12,8 @@ import {
     X,
     ChevronDown,
     Book,
-    DollarSign
+    Car,
+    Megaphone
 } from 'lucide-react';
 import profileImage from '../../assets/juan-4x4.jpg';
 import resume from '../../assets/juan-cv.jpeg';
@@ -125,18 +126,18 @@ const Portfolio = () => {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                         </span>
-                        Big Tech fan here!
+                        Open to Semi-Senior roles · Remote
                     </div>
 
                     <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight mb-6 animate-fade-in-up delay-100">
                         <span className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
-                            Juan Sebastian
+                            Juan Sebastián
                         </span> <br />
                         Software Engineer
                     </h1>
 
                     <p className={`text-xl md:text-2xl max-w-2xl leading-relaxed mb-10 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'} animate-fade-in-up delay-200`}>
-                        Engineering scalable, high-performance web applications. I combine clean code with modern design principles to deliver seamless user experiences. Currently crafting solutions at GlobalLogic for Claro LATAM.
+                        Frontend-focused engineer (React, TypeScript, microfrontends) who builds products end to end, from the UI to the API and the CI pipeline. Currently leading the frontend of an ERP module at Hitachi Digital (ex GlobalLogic) for Claro.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-300">
@@ -182,24 +183,15 @@ const Portfolio = () => {
 
                         <div className="md:col-span-3 space-y-6 text-lg leading-relaxed">
                             <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                I started programming in 2022 out of curiosity and a lifelong interest in computers. I began learning on my own by reading books like You Don’t Know JS, Clean Code, The Pragmatic Programmer, and Java by Deitel, which gave me a strong foundation in core concepts and good development practices from day one.
+                                I'm a Software Engineer at Hitachi Digital (ex GlobalLogic), where I own the frontend of a critical module in Claro's ERP re-engineering: React, TypeScript, microfrontends, Storybook and unit testing.
                             </p>
                             <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                After that, I enrolled in several courses on HTML, CSS, and JavaScript, and that’s when I realized I wanted to take this seriously. I then joined a full-stack bootcamp, where I worked with Java for the backend, MySQL for databases, and React for the frontend.
+                                Before that, at VML, I built pixel-perfect interfaces for Microsoft campaigns reaching millions of users, and led an internal .NET tool that improved the team's delivery metrics.
+                            </p>
+                            <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
+                                Outside work I ship full products end to end, like TD Autos, my thesis at Escuela Da Vinci, with CI, quality gates and automatic deploys.
                             </p>
                         </div>
-                    </div>
-
-                    <div className="mt-12 space-y-6 text-lg leading-relaxed">
-                        <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                            Later, I decided to deepen my technical path and started studying to become a Systems Analyst.
-                        </p>
-                        <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                            That journey led me to my first job as an Email Developer at VML for Microsoft. There, I strengthened my skills in HTML, CSS, and JavaScript, and learned a lot about teamwork, production workflows, quality standards, and tools like AEM, Marketo, and Salesforce Marketing Cloud. I also led an internal project —a .NET application— that significantly improved key metrics for Microsoft’s email development processes.
-                        </p>
-                        <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                            That growth opened the door to my current role as a Front-End Developer at GlobalLogic, where I work with React, TypeScript, and modern web technologies —including microfrontends— to build scalable, high-quality user interfaces.
-                        </p>
                     </div>
                 </div>
             </section>
@@ -214,60 +206,60 @@ const Portfolio = () => {
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Project 1 */}
                         <ProjectCard
-                            title="Buenas Lecturas"
-                            description="A Java desktop application designed with MVC, DAO, and service-layer patterns. It includes user login, session management, persistent storage with MySQL, and a Swing-based UI for browsing, adding, and managing books. Developed as part of my academic journey to strengthen architecture, clean code, and software design principles."
-                            tags={['JAVA', 'Spring Boot', 'MySQL', 'HTML', 'CSS', 'Maven', 'API Rest']}
+                            title="TD Autos"
+                            description="Thesis project. Helps used-car buyers decide safely (short diagnosis, profile-based recommendations, inspection and transfer checklists), lets dealerships manage inventory under a monthly subscription, and gives admins tools to onboard dealerships and supervise payments. Monorepo with a Laravel REST API, a React web SPA and a React Native app sharing pure TypeScript domain logic, plus GitHub Actions CI, a SonarCloud quality gate, Docker and automatic deploys on Vercel."
+                            tags={['React 19', 'TypeScript', 'React Native', 'Laravel 12', 'PostgreSQL', 'GitHub Actions', 'Docker']}
                             darkMode={darkMode}
-                            icon={<Book size={40} className="text-orange-500" />}
-                            gitHubLink="https://github.com/saracco-juan/BuenasLecturas"
-                            externalLink="https://github.com/saracco-juan/BuenasLecturas"
-                            partnerLink=""
-                            partnerName=""
+                            icon={<Car size={40} className="text-blue-500" />}
+                            gitHubLink="https://github.com/saracco-juan/td-autos"
+                            externalLink="https://td-autos.vercel.app"
+                            partnerLink="https://github.com/marianogiardina"
+                            partnerName="Mariano Giardina"
                         />
 
                         {/* Project 2 */}
                         <ProjectCard
-                            title="One Up Gym"
-                            description="A Laravel-based class scheduling system. It implements recurrent weekly classes, dynamic time-slot generation, database-driven persistence, user roles, and strict validation for overlapping bookings. Built with Blade templates, service-layer logic, and clean architecture principles."
-                            tags={['Laravel', 'Blade', 'MySQL', 'Team Project', 'API Rest']}
+                            title="J-gym"
+                            description="Mobile-first PWA to track gym workouts around progressive overload. Built with architecture discipline: pure domain logic in src/core, the repository pattern in src/infrastructure, and a UI that never touches Supabase directly."
+                            tags={['Next.js 16', 'React 19', 'TypeScript', 'Tailwind', 'Supabase', 'Zustand', 'Jest']}
                             darkMode={darkMode}
-                            icon={<Dumbbell size={40} className="text-blue-500" />}
-                            gitHubLink="https://github.com/marianogiardina/OneUpGym"
-                            externalLink="https://github.com/marianogiardina/OneUpGym"
-                            partnerLink="https://github.com/marianogiardina"
-                            partnerName="Mariano Giardina"
+                            icon={<Dumbbell size={40} className="text-emerald-500" />}
+                            gitHubLink="https://github.com/saracco-juan/J-gym"
+                            externalLink="https://juangym.vercel.app"
+                            partnerLink=""
+                            partnerName=""
                         />
 
                         {/* Project 3 */}
                         <ProjectCard
-                            title="Yenny Library"
-                            description="A full-featured library management platform built with Python, Flask, Jinja, and SQLite. It includes book inventory management, authors, categories, user authentication, and loan/return workflows. Designed with a clean MVC-like structure using Blueprints, service logic, and database models to ensure scalability and maintainability. Features secure session handling, form validation, and a modular template system powered by Jinja."
-                            tags={['Python', 'Flask', 'Jinja', 'SQLite', 'Team Project']}
+                            title="La Silbatina"
+                            description="Anonymous message wall for Argentine football fans: each fan gets 5 'whistles' to vote, and the most whistled message tops the board. No signup, only a hashed cookie/IP is stored (privacy by design), plus admin moderation."
+                            tags={['Node.js', 'PostgreSQL', 'Privacy by design']}
                             darkMode={darkMode}
-                            icon={<Book size={40} className="text-emerald-500" />}
-                            gitHubLink="https://github.com/marianogiardina/yenny-ayms"
-                            externalLink="https://trello.com/b/DatryRwM/yenny-parcial-ayms"
-                            partnerLink="https://github.com/marianogiardina"
-                            partnerName="Mariano Giardina"
+                            icon={<Megaphone size={40} className="text-orange-500" />}
+                            gitHubLink="https://github.com/saracco-juan/silbatina"
+                            externalLink="https://github.com/saracco-juan/silbatina"
+                            partnerLink=""
+                            partnerName=""
                         />
 
                         {/* Project 4 */}
                         <ProjectCard
-                            title="Dolar App"
-                            description="A currency-tracking web app that consumes public APIs to display official, blue, MEP, and other dollar exchange rates in Argentina. Built with a component-based architecture, clean state management, reusable UI patterns, error handling, and loading states. Focused on improving API integration, formatting utilities, asynchronous flows, and responsive UI behaviors."
-                            tags={['HTML', 'CSS', 'JavaScript', 'API Rest']}
+                            title="Buenas Lecturas"
+                            description="Virtual library to track your reading and write reviews, with book search via Open Library."
+                            tags={['Java', 'Spring Boot', 'BCrypt', 'REST API']}
                             darkMode={darkMode}
-                            icon={<DollarSign size={40} className="text-green-500" />}
-                            gitHubLink="https://github.com/juan-saracco/Dolar-APP"
-                            externalLink="https://dolar-app.netlify.app/"
+                            icon={<Book size={40} className="text-violet-500" />}
+                            gitHubLink="https://github.com/saracco-juan/BuenasLecturas"
+                            externalLink="https://github.com/saracco-juan/BuenasLecturas"
                             partnerLink=""
                             partnerName=""
                         />
                     </div>
 
                     <HighlightCard
-                        title="Engineering Collaboration"
-                        description="Improved processes in QA, version control, internal tools, documentation, and cross-team development. Led the development of an internal .NET team tool used for tracking productivity and delivery metrics."
+                        title="Internal tooling at VML"
+                        description="Led the development of an internal .NET tool used by the email team to track productivity and delivery metrics, and improved processes in QA, version control and documentation."
                         tags={['C#', '.NET', 'Team Work']}
                         darkMode={darkMode}
                     />
@@ -285,26 +277,29 @@ const Portfolio = () => {
                     <div className="space-y-12 relative border-l-2 border-zinc-200 dark:border-zinc-800 ml-3 md:ml-6 pl-8 md:pl-12">
 
                         <ExperienceItem
-                            role="Front-End Developer"
-                            company="GlobalLogic (Claro Client)"
-                            period="2025 - Present"
+                            role="Software Engineer"
+                            company="Hitachi Digital, ex GlobalLogic (Claro Client)"
+                            period="Jun 2025 - Present"
                             description={[
-                                "Developing responsive UI components for Claro web properties.",
-                                "Collaborating with design teams to ensure technical feasibility of layouts."
+                                "Led the frontend of a new critical module in the re-engineering of a corporate ERP, with full ownership of the UI.",
+                                "Migrated legacy interfaces to a scalable microfrontends architecture.",
+                                "Mocked backend contracts so the team could develop locally without waiting on external services.",
+                                "Added Storybook and unit testing to the team's workflow, and used AI tools to speed up development."
                             ]}
                             current={true}
                             darkMode={darkMode}
                         />
 
                         <ExperienceItem
-                            role="Front-End Email Developer"
+                            role="Frontend Developer (Email Engineering)"
                             company="VML (Microsoft Client)"
                             period="2023 - 2025"
                             description={[
-                                "Developing responsive UI components for Microsoft web properties.",
-                                "Managing end-to-end email production cycles using SFMC and Marketo.",
-                                "Collaborating with design teams to ensure technical feasibility of layouts.",
-                                "Mentoring junior developers on HTML best practices."
+                                "Built pixel-perfect HTML/CSS interfaces from designs, shipping 15+ deliveries per week for global campaigns reaching millions of users.",
+                                "Solved cross-client and cross-device compatibility issues, cutting the production bug rate by 20%.",
+                                "Led an internal .NET tool to track the team's productivity and delivery metrics.",
+                                "Managed end-to-end production cycles with SFMC and Marketo, and mentored junior developers.",
+                                "Documented internal processes, cutting onboarding for new developers from 3 to 2 months."
                             ]}
                             current={false}
                             darkMode={darkMode}
@@ -324,17 +319,14 @@ const Portfolio = () => {
                         />
 
                         <ExperienceItem
-                            role="Systems Analyst Student"
-                            company="Academic Projects"
-                            period="2023 - Present"
+                            role="Systems Analysis Student"
+                            company="Escuela Da Vinci"
+                            period="2024 - 2026"
                             description={[
-                                "Specialized in Object Oriented Programming (Java) and Database Design.",
-                                "Led team projects for final year capstone.",
-                                "Developed academic projects using Java, Python, and SQL with clean MVC architectures.",
-                                "Built full-stack applications integrating authentication, CRUD operations, and relational database models.",
-                                "Designed and implemented ER diagrams, normalized schemas, and optimized SQL queries.",
-                                "Applied software engineering principles such as OOP, design patterns, and modular code organization.",
-                                "Led team-based capstone projects, coordinating tasks, version control, and documentation."
+                                "Thesis: TD Autos, a full product with web, mobile and API, built end to end in a team of two.",
+                                "Built full-stack academic projects in Java, Python and PHP with clean MVC architectures, authentication and relational databases.",
+                                "Designed ER diagrams, normalized schemas and optimized SQL queries.",
+                                "Coordinated team projects: task planning, version control and documentation."
                             ]}
                             darkMode={darkMode}
                             current={true}
@@ -353,17 +345,17 @@ const Portfolio = () => {
                     <div className="grid md:grid-cols-3 gap-8">
                         <SkillCard
                             title="Front-End Core"
-                            skills={['React JS', 'JavaScript (ES6+)', 'TypeScript', 'HTML5', 'CSS3/SASS', 'Tailwind CSS']}
+                            skills={['React', 'TypeScript', 'JavaScript (ES6+)', 'Next.js', 'React Native', 'Microfrontends', 'Module Federation', 'Storybook', 'HTML5', 'CSS3/SASS', 'Tailwind CSS']}
                             darkMode={darkMode}
                         />
                         <SkillCard
-                            title="Complimentary Skills"
-                            skills={['Salesforce', 'Adobe Photoshop', 'Git / GitHub', 'CSS', 'AMPScript', 'Figma']}
+                            title="Tools & Quality"
+                            skills={['Git / GitHub', 'GitHub Actions', 'Jenkins', 'Docker', 'Jest', 'SonarCloud', 'Figma', 'SFMC / AMPScript', 'AI agents for development']}
                             darkMode={darkMode}
                         />
                         <SkillCard
                             title="Backend Core"
-                            skills={['Node.js', 'Express', 'Java', 'Spring Boot', 'PHP', 'Laravel', 'MySQL', 'PostgreSQL', 'Firebase']}
+                            skills={['Node.js', 'Express', 'Java', 'Spring Boot', 'PHP', 'Laravel', 'PostgreSQL', 'Supabase', 'MySQL', 'Firebase', '.NET']}
                             darkMode={darkMode}
                         />
                     </div>
@@ -379,19 +371,16 @@ const Portfolio = () => {
                         I am always looking for new opportunities to leverage my skills in a challenging environment. Whether you have a question or just want to say hi, my inbox is always open.
                     </p>
 
-                    {/* Todo: Add email */}
                     <a
-                        href="mailto:juan@juansaracco.com"
+                        href="mailto:juansaracco1212@gmail.com"
                         className="inline-flex items-center gap-3 px-8 py-4 rounded-full border border-blue-500 text-blue-500 hover:bg-blue-500/10 transition-colors text-lg font-medium"
-                        target="_blank"
-                        rel="noopener noreferrer"
                     >
                         <Mail size={20} /> Say Hello
                     </a>
 
                     <div className="mt-16 flex justify-center gap-8">
-                        <SocialLink href="https://github.com/juan-saracco" icon={<Github size={24} />} label="GitHub" darkMode={darkMode} />
-                        <SocialLink href="https://www.linkedin.com/in/juan-sebastian-saracco/" icon={<Linkedin size={24} />} label="LinkedIn" darkMode={darkMode} />
+                        <SocialLink href="https://github.com/saracco-juan" icon={<Github size={24} />} label="GitHub" darkMode={darkMode} />
+                        <SocialLink href="https://www.linkedin.com/in/juan-saracco/" icon={<Linkedin size={24} />} label="LinkedIn" darkMode={darkMode} />
                     </div>
                 </div>
             </section>
@@ -399,7 +388,7 @@ const Portfolio = () => {
             {/* --- Footer --- */}
             <footer className={`py-8 text-center text-sm ${darkMode ? 'text-zinc-600 bg-zinc-950' : 'text-zinc-400 bg-zinc-50'}`}>
                 <p>Designed & Built by Juan Sebastián Saracco</p>
-                <p className="mt-2 text-xs opacity-70">React · Tailwind CSS · TypeScript</p>
+                <p className="mt-2 text-xs opacity-70">React · TypeScript · Tailwind CSS · Vite</p>
             </footer>
 
         </div>
