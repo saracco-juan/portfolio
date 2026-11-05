@@ -13,10 +13,11 @@ import {
     ChevronDown,
     Book,
     Car,
-    Megaphone
+    Megaphone,
+    DollarSign
 } from 'lucide-react';
 import profileImage from '../../assets/juan-4x4.jpg';
-import resume from '../../assets/juan-cv.jpeg';
+import resume from '../../assets/juan-saracco-cv.pdf';
 
 const Portfolio = () => {
     const [darkMode, setDarkMode] = useState(true);
@@ -121,14 +122,6 @@ const Portfolio = () => {
             {/* --- Hero Section --- */}
             <section id="home" className="pt-32 pb-20 px-6 min-h-screen flex flex-col justify-center">
                 <div className="max-w-5xl mx-auto w-full">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500 border border-blue-500/20 mb-6 animate-fade-in-up">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                        </span>
-                        Open to Semi-Senior roles · Remote
-                    </div>
-
                     <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight mb-6 animate-fade-in-up delay-100">
                         <span className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
                             Juan Sebastián
@@ -252,6 +245,32 @@ const Portfolio = () => {
                             icon={<Book size={40} className="text-violet-500" />}
                             gitHubLink="https://github.com/saracco-juan/BuenasLecturas"
                             externalLink="https://github.com/saracco-juan/BuenasLecturas"
+                            partnerLink=""
+                            partnerName=""
+                        />
+
+                        {/* Project 5 */}
+                        <ProjectCard
+                            title="One Up Gym"
+                            description="A Laravel-based class scheduling system. It implements recurrent weekly classes, dynamic time-slot generation, database-driven persistence, user roles, and strict validation for overlapping bookings. Built with Blade templates, service-layer logic, and clean architecture principles."
+                            tags={['Laravel', 'Blade', 'MySQL', 'Team Project', 'API Rest']}
+                            darkMode={darkMode}
+                            icon={<Dumbbell size={40} className="text-blue-500" />}
+                            gitHubLink="https://github.com/marianogiardina/OneUpGym"
+                            externalLink="https://github.com/marianogiardina/OneUpGym"
+                            partnerLink="https://github.com/marianogiardina"
+                            partnerName="Mariano Giardina"
+                        />
+
+                        {/* Project 6 */}
+                        <ProjectCard
+                            title="Dolar App"
+                            description="A currency-tracking web app that consumes public APIs to display official, blue, MEP, and other dollar exchange rates in Argentina. Built with a component-based architecture, clean state management, reusable UI patterns, error handling, and loading states. Focused on improving API integration, formatting utilities, asynchronous flows, and responsive UI behaviors."
+                            tags={['HTML', 'CSS', 'JavaScript', 'API Rest']}
+                            darkMode={darkMode}
+                            icon={<DollarSign size={40} className="text-green-500" />}
+                            gitHubLink="https://github.com/juan-saracco/Dolar-APP"
+                            externalLink="https://dolar-app.netlify.app/"
                             partnerLink=""
                             partnerName=""
                         />
