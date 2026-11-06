@@ -532,6 +532,104 @@
   pointer-events: none;
 }
 
+.yt-frame__screen,
+.yt-frame__screen iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.yt-frame.is-open {
+  left: 50%;
+  top: 50%;
+  bottom: auto;
+  z-index: 120;
+  width: min(960px, calc(100vw - 32px));
+  height: auto;
+  overflow: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  animation: video-in 0.55s var(--ease-out);
+}
+
+.yt-frame.is-open .yt-frame__screen {
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7);
+  background: #000;
+}
+
+.yt-frame__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  color: var(--paper);
+}
+
+.yt-frame__bar .icon-btn {
+  color: var(--paper);
+  border-color: rgba(242, 240, 235, 0.3);
+}
+
+.yt-frame__title {
+  flex: 1;
+  font-weight: 700;
+  font-variation-settings: "wdth" 112;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: rgba(5, 5, 5, 0.82);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.video-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@keyframes video-in {
+  from { opacity: 0; transform: translate(-50%, -46%) scale(0.94); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* Song titles are buttons that open the video */
+button.now-playing__title,
+button.mini-deck__text {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.now-playing__title {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s ease;
+}
+
+button.now-playing__title:hover,
+button.mini-deck__text:hover .mini-deck__title {
+  text-decoration: underline;
+  text-decoration-color: var(--red);
+}
+
 .deck__play:hover {
   background: #2d2c2a;
 }
@@ -618,14 +716,21 @@
   box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
 }
 
+.sleeve__cover {
+  background: #fff;
+}
+
 .sleeve__cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 10%;
-  transform: scale(1.4);
-  transform-origin: 50% 18%;
-  filter: saturate(0.9);
+  object-position: 50% 6%;
+  transition: filter 0.4s ease;
+}
+
+/* On the dark side the drawing turns into white ink on black */
+.site[data-theme="dark"] .sleeve__cover img {
+  filter: invert(1) brightness(0.92);
 }
 
 .notes__text p {

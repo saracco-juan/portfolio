@@ -14,7 +14,7 @@ import {
     Sun,
     X,
 } from 'lucide-react';
-import profileImage from '../../assets/juan-4x4.jpg';
+import profileImage from '../../assets/juan-drawing.jpg';
 import resume from '../../assets/juan-saracco-cv.pdf';
 import './portfolio.css';
 
@@ -401,9 +401,7 @@ const Portfolio = () => {
     const heroRecordRef = useRef<HTMLSpanElement>(null);
     const miniRecordRef = useRef<HTMLSpanElement>(null);
 
-    const [theme, setTheme] = useState<'dark' | 'light'>(() =>
-        typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
-    );
+    const [theme, setTheme] = useState<'dark' | 'light'>('light');
     const [menuOpen, setMenuOpen] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [touched, setTouched] = useState(false);
@@ -420,6 +418,14 @@ const Portfolio = () => {
     const slot = (no: string) => document.querySelector(`[data-disc="${no}"]`);
 
     const [toast, setToast] = useState<string | null>(null);
+    const [videoOpen, setVideoOpen] = useState(false);
+
+    useEffect(() => {
+        if (!videoOpen) return;
+        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setVideoOpen(false);
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [videoOpen]);
     const [themeSpin, setThemeSpin] = useState(0);
 
     // Show what's playing in the browser tab.
@@ -554,9 +560,14 @@ const Portfolio = () => {
                             <span />
                         </span>
                         <span>{playing ? 'Now playing:' : 'On the deck:'}</span>
-                        <span key={title} className="now-playing__title is-changing">
+                        <button
+                            key={title}
+                            className="now-playing__title is-changing"
+                            onClick={() => setVideoOpen(true)}
+                            title="Watch the video"
+                        >
                             {title}
-                        </span>
+                        </button>
                     </div>
 
                     <nav className="nav__links" aria-label="Sections">
@@ -656,7 +667,7 @@ const Portfolio = () => {
                         <div className="sleeve" data-reveal tabIndex={0} aria-label="Photo of Juan">
                             <div className="sleeve__record" aria-hidden="true" />
                             <div className="sleeve__cover">
-                                <img src={profileImage} alt="Juan Sebastián Saracco" />
+                                <img src={profileImage} alt="Line drawing of Juan Sebastián Saracco" />
                             </div>
                         </div>
 
@@ -924,10 +935,10 @@ const Portfolio = () => {
                         </span>
                     </span>
                 </button>
-                <div className="mini-deck__text">
-                    <span className="mini-deck__state">{playing ? 'Now playing' : 'On the deck'}</span>
+                <button className="mini-deck__text" onClick={() => setVideoOpen(true)} title="Watch the video">
+                    <span className="mini-deck__state">{playing ? 'Now playing · tap to watch' : 'On the deck · tap to watch'}</span>
                     <span className="mini-deck__title">{title}</span>
-                </div>
+                </button>
                 <button
                     className="deck__play mini-deck__play"
                     onClick={togglePlay}
@@ -942,8 +953,32 @@ const Portfolio = () => {
                 {toast}
             </div>
 
-            <div className="yt-frame" aria-hidden="true">
-                <div id="yt-player" />
+            {/* The YouTube player: tucked away, or opened as a video when the song title is clicked */}
+            <div
+                className={`video-backdrop${videoOpen ? ' is-open' : ''}`}
+                onClick={() => setVideoOpen(false)}
+                aria-hidden="true"
+            />
+            <div
+                className={`yt-frame${videoOpen ? ' is-open' : ''}`}
+                role={videoOpen ? 'dialog' : undefined}
+                aria-label={videoOpen ? title : undefined}
+                aria-hidden={!videoOpen}
+            >
+                <div className="yt-frame__screen">
+                    <div id="yt-player" />
+                </div>
+                {videoOpen && (
+                    <div className="yt-frame__bar">
+                        <span className="yt-frame__title">{title}</span>
+                        <button className="icon-btn" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'}>
+                            {playing ? <Pause size={16} /> : <Play size={16} />}
+                        </button>
+                        <button className="icon-btn" onClick={() => setVideoOpen(false)} aria-label="Close the video">
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
             </div>
 
             <footer className="footer">
