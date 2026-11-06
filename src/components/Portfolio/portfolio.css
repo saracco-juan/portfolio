@@ -505,6 +505,29 @@
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
+.deck__play.is-hint {
+  background: var(--red);
+  border-color: var(--red);
+  animation: hint 2s ease-out infinite 1.4s;
+}
+
+@keyframes hint {
+  0% { box-shadow: 0 0 0 0 rgba(227, 36, 43, 0.55); }
+  70%, 100% { box-shadow: 0 0 0 16px rgba(227, 36, 43, 0); }
+}
+
+/* The YouTube player stays in the page but out of the way */
+.yt-frame {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .deck__play:hover {
   background: #2d2c2a;
 }

@@ -178,6 +178,11 @@ const GEAR: { title: string; items: string[] }[] = [
 
 const NAME_WORDS = ['Juan', 'Sebastián', 'Saracco'];
 
+type Song = { videoId: string; start: number; title: string; artist: string };
+
+// The record that plays by default. Each track will get its own song later.
+const DEFAULT_SONG: Song = { videoId: 'jcz0YxYl6Ac', start: 0, title: 'Breathe (In the Air)', artist: 'Pink Floyd' };
+
 /* ------------------------------------------------------------------
    Hooks
 ------------------------------------------------------------------- */
@@ -225,6 +230,72 @@ function useActiveSection() {
     return active;
 }
 
+type YTPlayer = { playVideo(): void; pauseVideo(): void };
+
+declare global {
+    interface Window {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        YT?: any;
+        onYouTubeIframeAPIReady?: () => void;
+    }
+}
+
+// Loads a YouTube player for the song and keeps `playing` in sync with it.
+function useYouTubePlayer(song: Song, setPlaying: (p: boolean) => void) {
+    const playerRef = useRef<YTPlayer | null>(null);
+    const readyRef = useRef(false);
+    const wantsPlayRef = useRef(false);
+
+    useEffect(() => {
+        const create = () => {
+            if (playerRef.current) return;
+            playerRef.current = new window.YT.Player('yt-player', {
+                width: '200',
+                height: '200',
+                videoId: song.videoId,
+                playerVars: { start: song.start, controls: 0, playsinline: 1, rel: 0 },
+                events: {
+                    onReady: () => {
+                        readyRef.current = true;
+                        if (wantsPlayRef.current) playerRef.current?.playVideo();
+                    },
+                    onStateChange: (e: { data: number }) => {
+                        if (e.data === 1) setPlaying(true);
+                        if (e.data === 2 || e.data === 0) setPlaying(false);
+                    },
+                },
+            });
+        };
+
+        if (window.YT?.Player) {
+            create();
+            return;
+        }
+        const previous = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = () => {
+            previous?.();
+            create();
+        };
+        if (!document.getElementById('yt-api')) {
+            const script = document.createElement('script');
+            script.id = 'yt-api';
+            script.src = 'https://www.youtube.com/iframe_api';
+            document.body.appendChild(script);
+        }
+    }, [song, setPlaying]);
+
+    return {
+        play: () => {
+            wantsPlayRef.current = true;
+            if (readyRef.current) playerRef.current?.playVideo();
+        },
+        pause: () => {
+            wantsPlayRef.current = false;
+            if (readyRef.current) playerRef.current?.pauseVideo();
+        },
+    };
+}
+
 /* ------------------------------------------------------------------
    Page
 ------------------------------------------------------------------- */
@@ -235,6 +306,9 @@ const Portfolio = () => {
         typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
     );
     const [playing, setPlaying] = useState(false);
+    const [touched, setTouched] = useState(false);
+    const song = DEFAULT_SONG;
+    const player = useYouTubePlayer(song, setPlaying);
     const [menuOpen, setMenuOpen] = useState(false);
     const [openJob, setOpenJob] = useState<string | null>('A1');
     const [openProject, setOpenProject] = useState<string | null>('B1');
@@ -242,19 +316,24 @@ const Portfolio = () => {
 
     useReveal(rootRef);
 
-    // The tonearm drops and the record starts once the page has settled.
-    useEffect(() => {
-        if (prefersReducedMotion()) return;
-        const t = window.setTimeout(() => setPlaying(true), 900);
-        return () => window.clearTimeout(t);
-    }, []);
+    // Browsers block autoplay with sound, so the record starts on the first click.
+    const togglePlay = () => {
+        setTouched(true);
+        if (playing) {
+            player.pause();
+            setPlaying(false);
+        } else {
+            player.play();
+            setPlaying(true);
+        }
+    };
 
     const scrollTo = (id: string) => {
         document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
         setMenuOpen(false);
     };
 
-    const activeLabel = SECTIONS.find((s) => s.id === active)?.label ?? 'Intro';
+    const songLabel = `${song.title}, ${song.artist}`;
 
     let charIndex = 0;
 
@@ -279,9 +358,9 @@ const Portfolio = () => {
                             <span />
                             <span />
                         </span>
-                        <span>Now playing:</span>
-                        <span key={activeLabel} className="now-playing__title is-changing">
-                            {activeLabel}
+                        <span>{playing ? 'Now playing:' : 'On the deck:'}</span>
+                        <span key={songLabel} className="now-playing__title is-changing">
+                            {songLabel}
                         </span>
                     </div>
 
@@ -363,7 +442,7 @@ const Portfolio = () => {
                             </div>
                         </div>
 
-                        <Turntable playing={playing} onToggle={() => setPlaying(!playing)} />
+                        <Turntable playing={playing} hint={!touched} onToggle={togglePlay} />
                     </div>
                 </section>
 
@@ -621,6 +700,10 @@ const Portfolio = () => {
                 </section>
             </main>
 
+            <div className="yt-frame" aria-hidden="true">
+                <div id="yt-player" />
+            </div>
+
             <footer className="footer">
                 <div className="wrap">Designed and built by Juan Sebastián Saracco with React and TypeScript.</div>
             </footer>
@@ -632,7 +715,7 @@ const Portfolio = () => {
    Turntable
 ------------------------------------------------------------------- */
 
-const Turntable = ({ playing, onToggle }: { playing: boolean; onToggle: () => void }) => (
+const Turntable = ({ playing, hint, onToggle }: { playing: boolean; hint: boolean; onToggle: () => void }) => (
     <div className="deck">
         <div className="platter">
             <button
@@ -663,7 +746,7 @@ const Turntable = ({ playing, onToggle }: { playing: boolean; onToggle: () => vo
         <div className="deck__controls">
             <span className="deck__led" aria-hidden="true" />
             <button
-                className="deck__play"
+                className={`deck__play${hint ? ' is-hint' : ''}`}
                 onClick={onToggle}
                 aria-label={playing ? 'Pause' : 'Play'}
                 aria-pressed={playing}
