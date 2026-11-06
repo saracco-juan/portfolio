@@ -695,10 +695,14 @@ const Portfolio = () => {
 
                             <div className="hero__actions">
                                 <button className="btn btn--primary" onClick={() => scrollTo('side-b')}>
+                                    <span className="btn__peek" aria-hidden="true" />
                                     Listen to Side B
                                 </button>
                                 <a className="btn" href={resume} target="_blank" rel="noopener noreferrer">
-                                    <Download size={18} /> Download CV
+                                    <span className="btn__icon-drop">
+                                        <Download size={18} />
+                                    </span>{' '}
+                                    Download CV
                                 </a>
                             </div>
                         </div>
@@ -728,13 +732,14 @@ const Portfolio = () => {
                                 Liner notes
                             </h2>
                             <p data-reveal style={{ '--d': 1 } as CSSProperties}>
-                                I'm a Software Engineer at Hitachi Digital, where I own the frontend of a critical module in
+                                I'm a Software Engineer at <mark className="hl">Hitachi Digital</mark>, where I own the frontend of a{' '}
+                                <mark className="hl">critical module</mark> in
                                 Claro's ERP re-engineering.
                             </p>
                             <p data-reveal style={{ '--d': 2 } as CSSProperties}>
                                 Before that, at VML, I built pixel-perfect interfaces for Microsoft campaigns reaching
-                                millions of users, and led an internal .NET tool that improved the team's delivery metrics.
-                                Outside work I ship full products end to end, with CI, quality gates and automatic deploys.
+                                <mark className="hl">millions of users</mark>, and led an internal <mark className="hl">.NET tool</mark> that improved the team's delivery metrics.
+                                Outside work I ship <mark className="hl">full products end to end</mark>, with CI, quality gates and automatic deploys.
                             </p>
                             <p className="notes__meta" data-reveal style={{ '--d': 3 } as CSSProperties}>
                                 Systems Analysis at Escuela Da Vinci, 2024 to 2026. Based in Buenos Aires, Argentine and
@@ -938,7 +943,9 @@ const Portfolio = () => {
                             data-reveal
                             style={{ '--d': 2 } as CSSProperties}
                         >
-                            {EMAIL}
+                            {EMAIL.split('@')[0]}
+                            <span className="contact__at" aria-hidden="true">@</span>
+                            {EMAIL.split('@')[1]}
                         </a>
                         <div className="contact__links" data-reveal style={{ '--d': 3 } as CSSProperties}>
                             <a
