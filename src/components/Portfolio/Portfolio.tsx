@@ -309,11 +309,10 @@ function useYouTubePlayer(setPlaying: (p: boolean) => void, setTitle: (t: string
                             });
                     },
                     onStateChange: (e: { data: number }) => {
-                        if (e.data === 1) {
-                            setPlaying(true);
-                            const title = playerRef.current?.getVideoData()?.title;
-                            if (title) setTitle(title);
-                        }
+                        // Any state change can carry the new video's title (even if autoplay was blocked).
+                        const title = playerRef.current?.getVideoData()?.title;
+                        if (title) setTitle(title);
+                        if (e.data === 1) setPlaying(true);
                         if (e.data === 2 || e.data === 0) setPlaying(false);
                     },
                 },
@@ -361,6 +360,9 @@ function useYouTubePlayer(setPlaying: (p: boolean) => void, setTitle: (t: string
 // frame, so the record still lands in the right place while rows open, close or scroll.
 const EMPTY = '__empty';
 
+// One record per track can be in the air; a new flight picks it up where it is.
+const flights = new Map<string, HTMLElement>();
+
 function flyRecord(
     host: HTMLElement | null,
     from: Element | null,
@@ -371,11 +373,18 @@ function flyRecord(
 ) {
     const done = () => onDone?.();
     const firstTo = getTo();
+    const inAir = flights.get(label);
+    if (inAir) {
+        inAir.dataset.cancelled = 'true';
+        from = inAir;
+    }
     if (!host || !from || !firstTo || prefersReducedMotion()) {
+        inAir?.remove();
         done();
         return;
     }
     const a = from.getBoundingClientRect();
+    inAir?.remove();
     if (!a.width) {
         done();
         return;
@@ -387,6 +396,7 @@ function flyRecord(
     span.textContent = label === 'Bonus' ? '★' : label;
     disc.appendChild(span);
     host.appendChild(disc);
+    flights.set(label, disc);
 
     const duration = 900;
     const start = performance.now();
@@ -395,6 +405,7 @@ function flyRecord(
     const ay = a.top + a.height / 2;
 
     const step = (now: number) => {
+        if (disc.dataset.cancelled) return;
         const t = Math.min(1, (now - start) / duration);
         const e = ease(t);
         const b = (getTo() ?? firstTo).getBoundingClientRect();
@@ -409,6 +420,7 @@ function flyRecord(
         if (t < 1) requestAnimationFrame(step);
         else {
             disc.remove();
+            if (flights.get(label) === disc) flights.delete(label);
             done();
         }
     };
