@@ -217,7 +217,7 @@ function useReveal(root: RefObject<HTMLDivElement | null>) {
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
-                        entry.target.classList.add('is-in');
+                        entry.target.setAttribute('data-in', '');
                         observer.unobserve(entry.target);
                     }
                 });

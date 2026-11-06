@@ -917,7 +917,7 @@
   transition-delay: calc(var(--d, 0) * 80ms);
 }
 
-.site.has-js [data-reveal].is-in {
+.site.has-js [data-reveal][data-in] {
   opacity: 1;
   transform: none;
 }
