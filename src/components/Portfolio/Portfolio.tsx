@@ -10,7 +10,6 @@ import {
     Moon,
     Pause,
     Play,
-    Plus,
     Sun,
     X,
 } from 'lucide-react';
@@ -178,10 +177,29 @@ const GEAR: { title: string; items: string[] }[] = [
 
 const NAME_WORDS = ['Juan', 'Sebastián', 'Saracco'];
 
-type Song = { videoId: string; start: number; title: string; artist: string };
+/* ------------------------------------------------------------------
+   Music — every track has its own record
+------------------------------------------------------------------- */
 
-// The record that plays by default. Each track will get its own song later.
-const DEFAULT_SONG: Song = { videoId: 'jcz0YxYl6Ac', start: 0, title: 'Breathe (In the Air)', artist: 'Pink Floyd' };
+type Song = { videoId: string; start: number };
+
+const DEFAULT_SONG: Song = { videoId: 'jcz0YxYl6Ac', start: 0 };
+const DEFAULT_TITLE = 'Pink Floyd - Breathe (In The Air)';
+
+// Track number → song and the second it starts at.
+const SONGS: Record<string, Song> = {
+    A1: { videoId: 'haBeRluizqI', start: 0 },
+    A2: { videoId: 'bEoaZc7pY4M', start: 0 },
+    A3: { videoId: 'j5AW9nEKYiY', start: 0 },
+    B1: { videoId: '5BIElTtN6Fs', start: 0 },
+    B2: { videoId: 'ENjrJ_zyeUc', start: 0 },
+    B3: { videoId: 'txksGGB60FM', start: 0 },
+    B4: { videoId: 'siO6dkqidc4', start: 0 },
+    B5: { videoId: 'C96VTjWNM38', start: 0 },
+    Bonus: { videoId: 'jcz0YxYl6Ac', start: 0 },
+};
+
+const labelColor = (no: string | null) => (no === null ? 'red' : no.startsWith('A') ? 'red' : no.startsWith('B') ? 'blue' : 'paper');
 
 /* ------------------------------------------------------------------
    Hooks
@@ -230,7 +248,25 @@ function useActiveSection() {
     return active;
 }
 
-type YTPlayer = { playVideo(): void; pauseVideo(): void };
+function useInView(ref: RefObject<HTMLElement | null>) {
+    const [inView, setInView] = useState(true);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0.25 });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [ref]);
+    return inView;
+}
+
+type YTPlayer = {
+    playVideo(): void;
+    pauseVideo(): void;
+    loadVideoById(o: { videoId: string; startSeconds: number }): void;
+    cueVideoById(o: { videoId: string; startSeconds: number }): void;
+    getVideoData(): { title?: string };
+};
 
 declare global {
     interface Window {
@@ -240,11 +276,11 @@ declare global {
     }
 }
 
-// Loads a YouTube player for the song and keeps `playing` in sync with it.
-function useYouTubePlayer(song: Song, setPlaying: (p: boolean) => void) {
+// A single YouTube player shared by every record.
+function useYouTubePlayer(setPlaying: (p: boolean) => void, setTitle: (t: string) => void) {
     const playerRef = useRef<YTPlayer | null>(null);
     const readyRef = useRef(false);
-    const wantsPlayRef = useRef(false);
+    const pendingRef = useRef<{ action: 'play' } | { action: 'load'; song: Song } | null>(null);
 
     useEffect(() => {
         const create = () => {
@@ -252,15 +288,26 @@ function useYouTubePlayer(song: Song, setPlaying: (p: boolean) => void) {
             playerRef.current = new window.YT.Player('yt-player', {
                 width: '200',
                 height: '200',
-                videoId: song.videoId,
-                playerVars: { start: song.start, controls: 0, playsinline: 1, rel: 0 },
+                videoId: DEFAULT_SONG.videoId,
+                playerVars: { start: DEFAULT_SONG.start, controls: 0, playsinline: 1, rel: 0 },
                 events: {
                     onReady: () => {
                         readyRef.current = true;
-                        if (wantsPlayRef.current) playerRef.current?.playVideo();
+                        const pending = pendingRef.current;
+                        pendingRef.current = null;
+                        if (pending?.action === 'play') playerRef.current?.playVideo();
+                        if (pending?.action === 'load')
+                            playerRef.current?.loadVideoById({
+                                videoId: pending.song.videoId,
+                                startSeconds: pending.song.start,
+                            });
                     },
                     onStateChange: (e: { data: number }) => {
-                        if (e.data === 1) setPlaying(true);
+                        if (e.data === 1) {
+                            setPlaying(true);
+                            const title = playerRef.current?.getVideoData()?.title;
+                            if (title) setTitle(title);
+                        }
                         if (e.data === 2 || e.data === 0) setPlaying(false);
                     },
                 },
@@ -282,18 +329,61 @@ function useYouTubePlayer(song: Song, setPlaying: (p: boolean) => void) {
             script.src = 'https://www.youtube.com/iframe_api';
             document.body.appendChild(script);
         }
-    }, [song, setPlaying]);
+    }, [setPlaying, setTitle]);
 
     return {
         play: () => {
-            wantsPlayRef.current = true;
             if (readyRef.current) playerRef.current?.playVideo();
+            else pendingRef.current = { action: 'play' };
         },
         pause: () => {
-            wantsPlayRef.current = false;
             if (readyRef.current) playerRef.current?.pauseVideo();
+            else pendingRef.current = null;
+        },
+        cue: (song: Song) => {
+            if (readyRef.current) playerRef.current?.cueVideoById({ videoId: song.videoId, startSeconds: song.start });
+            else pendingRef.current = null;
+        },
+        load: (song: Song) => {
+            if (readyRef.current) playerRef.current?.loadVideoById({ videoId: song.videoId, startSeconds: song.start });
+            else pendingRef.current = { action: 'load', song };
         },
     };
+}
+
+// Animates a copy of a record from one element to another.
+function flyRecord(host: HTMLElement | null, from: Element | null, to: Element | null, label: string, color: string) {
+    if (!host || !from || !to || prefersReducedMotion()) return;
+    const a = from.getBoundingClientRect();
+    const b = to.getBoundingClientRect();
+    if (!a.width || !b.width) return;
+
+    const disc = document.createElement('div');
+    disc.className = `flying-disc flying-disc--${color}`;
+    disc.innerHTML = `<span>${label}</span>`;
+    Object.assign(disc.style, {
+        left: `${a.left}px`,
+        top: `${a.top}px`,
+        width: `${a.width}px`,
+        height: `${a.height}px`,
+    });
+    host.appendChild(disc);
+
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+    const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+    const scale = b.width / a.width;
+
+    disc.animate(
+        [
+            { transform: 'translate(0, 0) scale(1) rotate(0deg)' },
+            {
+                transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 90}px) scale(${(1 + scale) / 2}) rotate(220deg)`,
+                offset: 0.5,
+            },
+            { transform: `translate(${dx}px, ${dy}px) scale(${scale}) rotate(420deg)` },
+        ],
+        { duration: 850, easing: 'cubic-bezier(0.5, 0, 0.2, 1)' }
+    ).onfinish = () => disc.remove();
 }
 
 /* ------------------------------------------------------------------
@@ -302,21 +392,28 @@ function useYouTubePlayer(song: Song, setPlaying: (p: boolean) => void) {
 
 const Portfolio = () => {
     const rootRef = useRef<HTMLDivElement>(null);
+    const heroRef = useRef<HTMLElement>(null);
+    const heroRecordRef = useRef<HTMLSpanElement>(null);
+    const miniRecordRef = useRef<HTMLSpanElement>(null);
+
     const [theme, setTheme] = useState<'dark' | 'light'>(() =>
         typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
     );
+    const [menuOpen, setMenuOpen] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [touched, setTouched] = useState(false);
-    const song = DEFAULT_SONG;
-    const player = useYouTubePlayer(song, setPlaying);
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [openJob, setOpenJob] = useState<string | null>('A1');
-    const [openProject, setOpenProject] = useState<string | null>('B1');
+    const [current, setCurrent] = useState<string | null>(null);
+    const [title, setTitle] = useState(DEFAULT_TITLE);
+
     const active = useActiveSection();
+    const heroInView = useInView(heroRef);
+    const player = useYouTubePlayer(setPlaying, setTitle);
 
     useReveal(rootRef);
 
-    // Browsers block autoplay with sound, so the record starts on the first click.
+    const deckTarget = () => (heroInView ? heroRecordRef.current : miniRecordRef.current);
+    const slot = (no: string) => document.querySelector(`[data-disc="${no}"]`);
+
     const togglePlay = () => {
         setTouched(true);
         if (playing) {
@@ -328,14 +425,43 @@ const Portfolio = () => {
         }
     };
 
+    // Takes a track's record out, puts it on the deck and returns the previous one.
+    const selectTrack = (no: string) => {
+        setTouched(true);
+
+        if (current === no) {
+            flyRecord(rootRef.current, deckTarget(), slot(no), no, labelColor(no));
+            setCurrent(null);
+            setTitle(DEFAULT_TITLE);
+            player.cue(DEFAULT_SONG);
+            setPlaying(false);
+            return;
+        }
+
+        if (current) flyRecord(rootRef.current, deckTarget(), slot(current), current, labelColor(current));
+        flyRecord(rootRef.current, slot(no), deckTarget(), no, labelColor(no));
+        setCurrent(no);
+        setTitle('Loading…');
+        player.load(SONGS[no] ?? DEFAULT_SONG);
+        setPlaying(true);
+    };
+
     const scrollTo = (id: string) => {
         document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
         setMenuOpen(false);
     };
 
-    const songLabel = `${song.title}, ${song.artist}`;
-
     let charIndex = 0;
+
+    const renderDisc = (no: string) => (
+        <span
+            className={`track__disc track__disc--${labelColor(no)}${current === no ? ' is-out' : ''}`}
+            data-disc={no}
+            aria-hidden="true"
+        >
+            <span className="track__disc-label">{no === 'Bonus' ? '★' : no}</span>
+        </span>
+    );
 
     return (
         <div
@@ -359,8 +485,8 @@ const Portfolio = () => {
                             <span />
                         </span>
                         <span>{playing ? 'Now playing:' : 'On the deck:'}</span>
-                        <span key={songLabel} className="now-playing__title is-changing">
-                            {songLabel}
+                        <span key={title} className="now-playing__title is-changing">
+                            {title}
                         </span>
                     </div>
 
@@ -408,7 +534,7 @@ const Portfolio = () => {
 
             <main>
                 {/* --- Hero --- */}
-                <section id="home" className="hero">
+                <section id="home" className="hero" ref={heroRef}>
                     <div className="wrap hero__grid">
                         <div>
                             <h1 className="hero__name" aria-label="Juan Sebastián Saracco">
@@ -442,7 +568,13 @@ const Portfolio = () => {
                             </div>
                         </div>
 
-                        <Turntable playing={playing} hint={!touched} onToggle={togglePlay} />
+                        <Turntable
+                            playing={playing}
+                            hint={!touched}
+                            current={current}
+                            recordRef={heroRecordRef}
+                            onToggle={togglePlay}
+                        />
                     </div>
                 </section>
 
@@ -477,6 +609,7 @@ const Portfolio = () => {
                     </div>
                 </section>
 
+
                 {/* --- Side A: work --- */}
                 <section id="side-a" className="section">
                     <div className="wrap">
@@ -484,12 +617,12 @@ const Portfolio = () => {
                             <h2 className="section__title">
                                 Side A<span className="section__sub">Work</span>
                             </h2>
-                            <p className="section__aside">Three jobs, from email campaigns to an enterprise ERP.</p>
+                            <p className="section__aside">Pick a record to hear it and read the track.</p>
                         </div>
 
                         <ol className="tracklist">
                             {JOBS.map((job, i) => {
-                                const open = openJob === job.no;
+                                const open = current === job.no;
                                 return (
                                     <li
                                         key={job.no}
@@ -501,7 +634,7 @@ const Portfolio = () => {
                                             className="track__row"
                                             aria-expanded={open}
                                             aria-controls={`panel-${job.no}`}
-                                            onClick={() => setOpenJob(open ? null : job.no)}
+                                            onClick={() => selectTrack(job.no)}
                                         >
                                             <span className="track__no">{job.no}</span>
                                             <span className="track__title">
@@ -512,9 +645,7 @@ const Portfolio = () => {
                                                 </span>
                                             </span>
                                             <span className="track__period">{job.period}</span>
-                                            <span className="track__toggle" aria-hidden="true">
-                                                <Plus size={16} />
-                                            </span>
+                                            <span className="track__sleeve">{renderDisc(job.no)}</span>
                                         </button>
                                         <div className="track__panel" id={`panel-${job.no}`}>
                                             <div className="track__panel-inner">
@@ -546,12 +677,12 @@ const Portfolio = () => {
                             <h2 className="section__title">
                                 Side B<span className="section__sub">Projects</span>
                             </h2>
-                            <p className="section__aside">Things I built outside work. Open a track to see the details.</p>
+                            <p className="section__aside">Things I built outside work. Each one has its own song.</p>
                         </div>
 
                         <ol className="tracklist">
                             {PROJECTS.map((p, i) => {
-                                const open = openProject === p.no;
+                                const open = current === p.no;
                                 return (
                                     <li
                                         key={p.no}
@@ -563,7 +694,7 @@ const Portfolio = () => {
                                             className="track__row"
                                             aria-expanded={open}
                                             aria-controls={`panel-${p.no}`}
-                                            onClick={() => setOpenProject(open ? null : p.no)}
+                                            onClick={() => selectTrack(p.no)}
                                         >
                                             <span className="track__no">{p.no}</span>
                                             <span className="track__title">
@@ -571,9 +702,7 @@ const Portfolio = () => {
                                                 <span className="track__meta">{p.summary}</span>
                                             </span>
                                             <span className="track__period">{p.bonus ? 'Hidden track' : ''}</span>
-                                            <span className="track__toggle" aria-hidden="true">
-                                                <Plus size={16} />
-                                            </span>
+                                            <span className="track__sleeve">{renderDisc(p.no)}</span>
                                         </button>
                                         <div className="track__panel" id={`panel-${p.no}`}>
                                             <div className="track__panel-inner">
@@ -700,6 +829,33 @@ const Portfolio = () => {
                 </section>
             </main>
 
+            {/* --- Mini deck: follows you once the big turntable is out of view --- */}
+            <aside className={`mini-deck${heroInView ? '' : ' is-visible'}`} aria-label="Player">
+                <button
+                    className="mini-deck__record"
+                    onClick={() => (current ? scrollTo(current.startsWith('A') ? 'side-a' : 'side-b') : scrollTo('home'))}
+                    aria-label="Go to the track on the deck"
+                >
+                    <span className="mini-deck__disc" ref={miniRecordRef}>
+                        <span className={`mini-deck__label label--${labelColor(current)}`}>
+                            {current === 'Bonus' ? '★' : current ?? 'JS'}
+                        </span>
+                    </span>
+                </button>
+                <div className="mini-deck__text">
+                    <span className="mini-deck__state">{playing ? 'Now playing' : 'On the deck'}</span>
+                    <span className="mini-deck__title">{title}</span>
+                </div>
+                <button
+                    className="deck__play mini-deck__play"
+                    onClick={togglePlay}
+                    aria-label={playing ? 'Pause' : 'Play'}
+                    aria-pressed={playing}
+                >
+                    {playing ? <Pause size={16} /> : <Play size={16} />}
+                </button>
+            </aside>
+
             <div className="yt-frame" aria-hidden="true">
                 <div id="yt-player" />
             </div>
@@ -715,7 +871,15 @@ const Portfolio = () => {
    Turntable
 ------------------------------------------------------------------- */
 
-const Turntable = ({ playing, hint, onToggle }: { playing: boolean; hint: boolean; onToggle: () => void }) => (
+type TurntableProps = {
+    playing: boolean;
+    hint: boolean;
+    current: string | null;
+    recordRef: RefObject<HTMLSpanElement | null>;
+    onToggle: () => void;
+};
+
+const Turntable = ({ playing, hint, current, recordRef, onToggle }: TurntableProps) => (
     <div className="deck">
         <div className="platter">
             <button
@@ -724,11 +888,13 @@ const Turntable = ({ playing, hint, onToggle }: { playing: boolean; hint: boolea
                 aria-label={playing ? 'Stop the record' : 'Play the record'}
                 aria-pressed={playing}
             >
-                <span className="record__disc" aria-hidden="true">
-                    <span className="record__label">
+                <span className="record__disc" aria-hidden="true" ref={recordRef}>
+                    <span className={`record__label label--${labelColor(current)}`}>
                         <span className="record__label-text">
-                            <span className="record__label-mono">JS</span>
-                            <span className="record__label-small">Side A</span>
+                            <span className="record__label-mono">{current === 'Bonus' ? '★' : current ?? 'JS'}</span>
+                            <span className="record__label-small">
+                                {current ? (current.startsWith('A') ? 'Side A' : 'Side B') : 'Juan Saracco'}
+                            </span>
                         </span>
                     </span>
                     <span className="record__hole" />
