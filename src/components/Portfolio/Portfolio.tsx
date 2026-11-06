@@ -441,7 +441,6 @@ const Portfolio = () => {
         setTouched(true);
         if (!playing) {
             player.play();
-            setPlaying(true);
         }
     };
 
@@ -551,7 +550,6 @@ const Portfolio = () => {
             setPlaying(false);
         } else {
             player.play();
-            setPlaying(true);
         }
     };
 
@@ -573,7 +571,6 @@ const Portfolio = () => {
         setCurrent(no);
         setTitle('Loading…');
         player.load(SONGS[no] ?? DEFAULT_SONG);
-        setPlaying(true);
     };
 
     const scrollTo = (id: string) => {
