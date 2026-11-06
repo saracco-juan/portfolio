@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from 'react';
 import {
@@ -419,10 +419,65 @@ const Portfolio = () => {
 
     const [toast, setToast] = useState<string | null>(null);
     const [videoOpen, setVideoOpen] = useState(false);
+    const videoRef = useRef<HTMLDivElement>(null);
+    const videoOriginRef = useRef<DOMRect | null>(null);
+
+    // Transform that shrinks the video back into the box it came from.
+    const originTransform = () => {
+        const el = videoRef.current;
+        const origin = videoOriginRef.current;
+        if (!el || !origin) return null;
+        const end = el.getBoundingClientRect();
+        const dx = origin.left + origin.width / 2 - (end.left + end.width / 2);
+        const dy = origin.top + origin.height / 2 - (end.top + end.height / 2);
+        const scale = Math.max(origin.width / end.width, 0.08);
+        return `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${scale})`;
+    };
+
+    // The video grows out of the box that was clicked, already playing.
+    const openVideo = (e: ReactMouseEvent<HTMLElement>) => {
+        videoOriginRef.current = e.currentTarget.getBoundingClientRect();
+        setVideoOpen(true);
+        setTouched(true);
+        if (!playing) {
+            player.play();
+            setPlaying(true);
+        }
+    };
+
+    const closeVideo = () => {
+        const el = videoRef.current;
+        const from = originTransform();
+        if (!el || !from || prefersReducedMotion()) {
+            setVideoOpen(false);
+            return;
+        }
+        el.animate(
+            [
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                { transform: from, opacity: 0 },
+            ],
+            { duration: 450, easing: 'cubic-bezier(0.5, 0, 0.75, 0)' }
+        ).onfinish = () => setVideoOpen(false);
+    };
+
+    useLayoutEffect(() => {
+        if (!videoOpen || prefersReducedMotion()) return;
+        const el = videoRef.current;
+        const from = originTransform();
+        if (!el || !from) return;
+        el.animate(
+            [
+                { transform: from, opacity: 0.3 },
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+            ],
+            { duration: 650, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+        );
+    }, [videoOpen]);
 
     useEffect(() => {
         if (!videoOpen) return;
-        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setVideoOpen(false);
+        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeVideo();
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [videoOpen]);
@@ -563,7 +618,7 @@ const Portfolio = () => {
                         <button
                             key={title}
                             className="now-playing__title is-changing"
-                            onClick={() => setVideoOpen(true)}
+                            onClick={openVideo}
                             title="Watch the video"
                         >
                             {title}
@@ -935,7 +990,7 @@ const Portfolio = () => {
                         </span>
                     </span>
                 </button>
-                <button className="mini-deck__text" onClick={() => setVideoOpen(true)} title="Watch the video">
+                <button className="mini-deck__text" onClick={openVideo} title="Watch the video">
                     <span className="mini-deck__state">{playing ? 'Now playing · tap to watch' : 'On the deck · tap to watch'}</span>
                     <span className="mini-deck__title">{title}</span>
                 </button>
@@ -956,10 +1011,11 @@ const Portfolio = () => {
             {/* The YouTube player: tucked away, or opened as a video when the song title is clicked */}
             <div
                 className={`video-backdrop${videoOpen ? ' is-open' : ''}`}
-                onClick={() => setVideoOpen(false)}
+                onClick={closeVideo}
                 aria-hidden="true"
             />
             <div
+                ref={videoRef}
                 className={`yt-frame${videoOpen ? ' is-open' : ''}`}
                 role={videoOpen ? 'dialog' : undefined}
                 aria-label={videoOpen ? title : undefined}
@@ -974,7 +1030,7 @@ const Portfolio = () => {
                         <button className="icon-btn" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'}>
                             {playing ? <Pause size={16} /> : <Play size={16} />}
                         </button>
-                        <button className="icon-btn" onClick={() => setVideoOpen(false)} aria-label="Close the video">
+                        <button className="icon-btn" onClick={closeVideo} aria-label="Close the video">
                             <X size={16} />
                         </button>
                     </div>
