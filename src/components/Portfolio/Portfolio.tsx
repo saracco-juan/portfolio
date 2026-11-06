@@ -1,536 +1,1165 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from 'react';
 import {
+    ArrowUpRight,
+    Download,
     Github,
     Linkedin,
     Mail,
-    Moon,
-    Sun,
-    ArrowRight,
-    ExternalLink,
-    Dumbbell,
     Menu,
+    Moon,
+    Pause,
+    Play,
+    Sun,
     X,
-    ChevronDown,
-    Book,
-    Car,
-    Megaphone,
-    DollarSign
 } from 'lucide-react';
-import profileImage from '../../assets/juan-4x4.jpg';
+import profileImage from '../../assets/juan-drawing.jpg';
 import resume from '../../assets/juan-saracco-cv.pdf';
+import './portfolio.css';
 
-const Portfolio = () => {
-    const [darkMode, setDarkMode] = useState(true);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [activeSection, setActiveSection] = useState('home');
+/* ------------------------------------------------------------------
+   Content
+------------------------------------------------------------------- */
 
-    // Toggle Dark Mode
-    const toggleTheme = () => {
-        setDarkMode(!darkMode);
-    };
+type Section = { id: string; label: string };
 
-    // Scroll Spy for Active Section
+const SECTIONS: Section[] = [
+    { id: 'notes', label: 'Liner notes' },
+    { id: 'side-a', label: 'Side A' },
+    { id: 'side-b', label: 'Side B' },
+    { id: 'gear', label: 'Gear' },
+    { id: 'contact', label: 'Contact' },
+];
+
+type Job = {
+    no: string;
+    role: string;
+    company: string;
+    period: string;
+    bullets: string[];
+    stack: string[];
+};
+
+const JOBS: Job[] = [
+    {
+        no: 'A1',
+        role: 'Software Engineer',
+        company: 'Hitachi Digital, client Claro',
+        period: 'Jun 2025 – now',
+        bullets: [
+            'Led the frontend of a new critical module in the re-engineering of a corporate ERP, with full ownership of the UI.',
+            'Migrated legacy interfaces to a scalable microfrontends architecture.',
+            'Mocked backend contracts so the team could develop locally without waiting on external services.',
+            "Added Storybook and unit testing to the team's workflow, and used AI tools to speed up development.",
+        ],
+        stack: ['React', 'TypeScript', 'Microfrontends', 'Storybook', 'Jenkins'],
+    },
+    {
+        no: 'A2',
+        role: 'Frontend Developer (Email Engineering)',
+        company: 'VML, Microsoft account',
+        period: '2023 – 2025',
+        bullets: [
+            'Built pixel-perfect HTML/CSS interfaces from designs, shipping 15+ deliveries per week for global campaigns reaching millions of users.',
+            'Solved cross-client and cross-device compatibility issues, cutting the production bug rate by 20%.',
+            "Led an internal .NET tool to track the team's productivity and delivery metrics.",
+            'Managed end-to-end production cycles with SFMC and Marketo, and mentored junior developers.',
+            'Documented internal processes, cutting onboarding for new developers from 3 to 2 months.',
+        ],
+        stack: ['HTML5', 'CSS3', 'SFMC', 'Marketo', '.NET'],
+    },
+    {
+        no: 'A3',
+        role: 'Freelance Web Developer',
+        company: 'Self-employed',
+        period: '2022 – 2023',
+        bullets: [
+            'Built custom React websites for small businesses, like Óptica Saracco.',
+            'Translated Figma designs into working code and improved client visibility with SEO.',
+        ],
+        stack: ['React', 'Figma', 'SEO'],
+    },
+];
+
+type Project = {
+    no: string;
+    title: string;
+    summary: string;
+    details: string[];
+    stack: string[];
+    code?: string;
+    live?: string;
+    partner?: { name: string; url: string };
+    bonus?: boolean;
+};
+
+const PROJECTS: Project[] = [
+    {
+        no: 'B1',
+        title: 'TD Autos',
+        summary: 'Helps people buy a used car without getting burned.',
+        details: [
+            'My thesis project. Buyers get a short diagnosis, profile-based recommendations and inspection and transfer checklists. Dealerships manage inventory under a monthly subscription, and admins onboard dealerships and supervise payments.',
+            'A monorepo with a Laravel REST API, a React web app and a React Native app that share pure TypeScript domain logic. GitHub Actions CI, a SonarCloud quality gate, Docker and automatic deploys on Vercel.',
+        ],
+        stack: ['React 19', 'TypeScript', 'React Native', 'Laravel 12', 'PostgreSQL', 'Docker', 'GitHub Actions'],
+        code: 'https://github.com/saracco-juan/td-autos',
+        live: 'https://td-autos.vercel.app',
+        partner: { name: 'Mariano Giardina', url: 'https://github.com/marianogiardina' },
+    },
+    {
+        no: 'B2',
+        title: 'J-gym',
+        summary: 'A mobile-first PWA to train around progressive overload.',
+        details: [
+            'Built with architecture discipline: pure domain logic in src/core, the repository pattern in src/infrastructure, and a UI that never talks to Supabase directly.',
+        ],
+        stack: ['Next.js 16', 'React 19', 'TypeScript', 'Tailwind', 'Supabase', 'Zustand', 'Jest'],
+        code: 'https://github.com/saracco-juan/J-gym',
+        live: 'https://juangym.vercel.app',
+    },
+    {
+        no: 'B3',
+        title: 'Buenas Lecturas',
+        summary: 'A virtual library to track your reading and write reviews.',
+        details: ['Book search through the Open Library API, user accounts with hashed passwords and a REST backend.'],
+        stack: ['Java', 'Spring Boot', 'BCrypt', 'REST API'],
+        code: 'https://github.com/saracco-juan/BuenasLecturas',
+    },
+    {
+        no: 'B4',
+        title: 'One Up Gym',
+        summary: 'Class scheduling for a gym, with recurring weekly classes.',
+        details: [
+            'Dynamic time-slot generation, user roles and strict validation against overlapping bookings, built with Blade templates and a service layer.',
+        ],
+        stack: ['Laravel', 'Blade', 'MySQL'],
+        code: 'https://github.com/marianogiardina/OneUpGym',
+        partner: { name: 'Mariano Giardina', url: 'https://github.com/marianogiardina' },
+    },
+    {
+        no: 'B5',
+        title: 'Dolar App',
+        summary: "Every Argentine dollar rate in one place: official, blue, MEP and more.",
+        details: [
+            'Consumes public APIs with loading and error states, formatting utilities and a responsive, component-based UI.',
+        ],
+        stack: ['JavaScript', 'HTML', 'CSS', 'REST API'],
+        code: 'https://github.com/juan-saracco/Dolar-APP',
+        live: 'https://dolar-app.netlify.app/',
+    },
+    {
+        no: 'Bonus',
+        title: 'Internal tooling at VML',
+        summary: "A .NET tool to track the email team's productivity and delivery.",
+        details: [
+            'Led its development and used it to improve QA, version control and documentation processes across the team.',
+        ],
+        stack: ['C#', '.NET'],
+        bonus: true,
+    },
+];
+
+const GEAR: { title: string; items: string[] }[] = [
+    {
+        title: 'Frontend',
+        items: ['React', 'TypeScript', 'Next.js', 'React Native', 'Microfrontends', 'Module Federation', 'Storybook', 'Tailwind CSS'],
+    },
+    {
+        title: 'Backend',
+        items: ['Node.js', 'Express', 'Java', 'Spring Boot', 'PHP', 'Laravel', 'PostgreSQL', 'Supabase', '.NET'],
+    },
+    {
+        title: 'Tools and quality',
+        items: ['Git and GitHub', 'GitHub Actions', 'Jenkins', 'Docker', 'Jest', 'SonarCloud', 'Figma', 'AI agents, spec first'],
+    },
+];
+
+const NAME_WORDS = ['Juan', 'Sebastián', 'Saracco'];
+
+/* ------------------------------------------------------------------
+   Music — every track has its own record
+------------------------------------------------------------------- */
+
+type Song = { videoId: string; start: number };
+
+const DEFAULT_SONG: Song = { videoId: 'jcz0YxYl6Ac', start: 0 };
+const DEFAULT_TITLE = 'Pink Floyd - Breathe (In The Air)';
+
+// Track number → song and the second it starts at.
+const SONGS: Record<string, Song> = {
+    A1: { videoId: 'haBeRluizqI', start: 0 },
+    A2: { videoId: 'bEoaZc7pY4M', start: 0 },
+    A3: { videoId: 'j5AW9nEKYiY', start: 0 },
+    B1: { videoId: '5BIElTtN6Fs', start: 0 },
+    B2: { videoId: 'ENjrJ_zyeUc', start: 0 },
+    B3: { videoId: 'txksGGB60FM', start: 0 },
+    B4: { videoId: 'siO6dkqidc4', start: 0 },
+    B5: { videoId: 'C96VTjWNM38', start: 0 },
+    Bonus: { videoId: 'jcz0YxYl6Ac', start: 0 },
+};
+
+const EMAIL = 'juansaracco1212@gmail.com';
+// Opens a ready-to-send email in Gmail; works even without a desktop mail app.
+const COMPOSE_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${EMAIL}&su=${encodeURIComponent('Hi Juan')}`;
+
+const labelColor = (no: string | null) =>
+    no === 'Bonus' ? 'paper' : no === null || no.startsWith('A') ? 'red' : no.startsWith('B') ? 'blue' : 'paper';
+
+/* ------------------------------------------------------------------
+   Hooks
+------------------------------------------------------------------- */
+
+const prefersReducedMotion = () =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function useReveal(root: RefObject<HTMLDivElement | null>) {
     useEffect(() => {
-        const handleScroll = () => {
-            const sections = ['home', 'about', 'projects', 'experience', 'skills', 'contact'];
-            const scrollPosition = window.scrollY + 100;
+        const el = root.current;
+        if (!el) return;
+        const targets = el.querySelectorAll('[data-reveal]');
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.setAttribute('data-in', '');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            },
+            { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+        );
+        targets.forEach((t) => observer.observe(t));
+        return () => observer.disconnect();
+    }, [root]);
+}
 
-            for (const section of sections) {
-                const element = document.getElementById(section);
-                if (element && element.offsetTop <= scrollPosition && (element.offsetTop + element.offsetHeight) > scrollPosition) {
-                    setActiveSection(section);
-                }
-            }
+function useActiveSection() {
+    const [active, setActive] = useState('home');
+    useEffect(() => {
+        const onScroll = () => {
+            const y = window.scrollY + window.innerHeight * 0.35;
+            let current = 'home';
+            SECTIONS.forEach(({ id }) => {
+                const el = document.getElementById(id);
+                if (el && el.offsetTop <= y) current = id;
+            });
+            setActive(current);
+        };
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+    return active;
+}
+
+function useInView(ref: RefObject<HTMLElement | null>) {
+    const [inView, setInView] = useState(true);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0.25 });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [ref]);
+    return inView;
+}
+
+type YTPlayer = {
+    playVideo(): void;
+    pauseVideo(): void;
+    loadVideoById(o: { videoId: string; startSeconds: number }): void;
+    cueVideoById(o: { videoId: string; startSeconds: number }): void;
+    getVideoData(): { title?: string };
+};
+
+declare global {
+    interface Window {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        YT?: any;
+        onYouTubeIframeAPIReady?: () => void;
+    }
+}
+
+// A single YouTube player shared by every record.
+function useYouTubePlayer(setPlaying: (p: boolean) => void, setTitle: (t: string) => void) {
+    const playerRef = useRef<YTPlayer | null>(null);
+    const readyRef = useRef(false);
+    const pendingRef = useRef<{ action: 'play' } | { action: 'load'; song: Song } | null>(null);
+
+    useEffect(() => {
+        const create = () => {
+            if (playerRef.current) return;
+            playerRef.current = new window.YT.Player('yt-player', {
+                width: '200',
+                height: '200',
+                videoId: DEFAULT_SONG.videoId,
+                playerVars: { start: DEFAULT_SONG.start, controls: 0, playsinline: 1, rel: 0 },
+                events: {
+                    onReady: () => {
+                        readyRef.current = true;
+                        const pending = pendingRef.current;
+                        pendingRef.current = null;
+                        if (pending?.action === 'play') playerRef.current?.playVideo();
+                        if (pending?.action === 'load')
+                            playerRef.current?.loadVideoById({
+                                videoId: pending.song.videoId,
+                                startSeconds: pending.song.start,
+                            });
+                    },
+                    onStateChange: (e: { data: number }) => {
+                        // Any state change can carry the new video's title (even if autoplay was blocked).
+                        const title = playerRef.current?.getVideoData()?.title;
+                        if (title) setTitle(title);
+                        if (e.data === 1) setPlaying(true);
+                        if (e.data === 2 || e.data === 0) setPlaying(false);
+                    },
+                },
+            });
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        if (window.YT?.Player) {
+            create();
+            return;
+        }
+        const previous = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = () => {
+            previous?.();
+            create();
+        };
+        if (!document.getElementById('yt-api')) {
+            const script = document.createElement('script');
+            script.id = 'yt-api';
+            script.src = 'https://www.youtube.com/iframe_api';
+            document.body.appendChild(script);
+        }
+    }, [setPlaying, setTitle]);
 
-    // Smooth Scroll
-    const scrollTo = (id) => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-            setIsMenuOpen(false);
+    return {
+        play: () => {
+            if (readyRef.current) playerRef.current?.playVideo();
+            else pendingRef.current = { action: 'play' };
+        },
+        pause: () => {
+            if (readyRef.current) playerRef.current?.pauseVideo();
+            else pendingRef.current = null;
+        },
+        cue: (song: Song) => {
+            if (readyRef.current) playerRef.current?.cueVideoById({ videoId: song.videoId, startSeconds: song.start });
+            else pendingRef.current = null;
+        },
+        load: (song: Song) => {
+            if (readyRef.current) playerRef.current?.loadVideoById({ videoId: song.videoId, startSeconds: song.start });
+            else pendingRef.current = { action: 'load', song };
+        },
+    };
+}
+
+// Flies a copy of a record from one element to another. The target is read on every
+// frame, so the record still lands in the right place while rows open, close or scroll.
+const EMPTY = '__empty';
+
+// One record per track can be in the air; a new flight picks it up where it is.
+const flights = new Map<string, HTMLElement>();
+
+function flyRecord(
+    host: HTMLElement | null,
+    from: Element | null,
+    getTo: () => Element | null,
+    label: string,
+    color: string,
+    onDone?: () => void
+) {
+    const done = () => onDone?.();
+    const firstTo = getTo();
+    const inAir = flights.get(label);
+    if (inAir) {
+        inAir.dataset.cancelled = 'true';
+        from = inAir;
+    }
+    if (!host || !from || !firstTo || prefersReducedMotion()) {
+        inAir?.remove();
+        done();
+        return;
+    }
+    const a = from.getBoundingClientRect();
+    inAir?.remove();
+    if (!a.width) {
+        done();
+        return;
+    }
+
+    const disc = document.createElement('div');
+    disc.className = `flying-disc flying-disc--${color}`;
+    const span = document.createElement('span');
+    span.textContent = label === 'Bonus' ? '★' : label;
+    disc.appendChild(span);
+    host.appendChild(disc);
+    flights.set(label, disc);
+
+    const duration = 900;
+    const start = performance.now();
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const ax = a.left + a.width / 2;
+    const ay = a.top + a.height / 2;
+
+    const step = (now: number) => {
+        if (disc.dataset.cancelled) return;
+        const t = Math.min(1, (now - start) / duration);
+        const e = ease(t);
+        const b = (getTo() ?? firstTo).getBoundingClientRect();
+        const size = a.width + (b.width - a.width) * e;
+        const cx = ax + (b.left + b.width / 2 - ax) * e;
+        const cy = ay + (b.top + b.height / 2 - ay) * e - Math.sin(Math.PI * e) * 90;
+        disc.style.width = `${size}px`;
+        disc.style.height = `${size}px`;
+        disc.style.left = `${cx - size / 2}px`;
+        disc.style.top = `${cy - size / 2}px`;
+        disc.style.transform = `rotate(${420 * e}deg)`;
+        if (t < 1) requestAnimationFrame(step);
+        else {
+            disc.remove();
+            if (flights.get(label) === disc) flights.delete(label);
+            done();
+        }
+    };
+    requestAnimationFrame(step);
+}
+
+/* ------------------------------------------------------------------
+   Page
+------------------------------------------------------------------- */
+
+const Portfolio = () => {
+    const rootRef = useRef<HTMLDivElement>(null);
+    const heroRef = useRef<HTMLElement>(null);
+    const heroRecordRef = useRef<HTMLButtonElement>(null);
+    const miniRecordRef = useRef<HTMLButtonElement>(null);
+    const heroInViewRef = useRef(true);
+    const flightRef = useRef(0);
+
+    const [theme, setTheme] = useState<'dark' | 'light'>('light');
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [playing, setPlaying] = useState(false);
+    const [touched, setTouched] = useState(false);
+    const [current, setCurrent] = useState<string | null>(null);
+    // What the deck shows: a track number, null for the JS record, or EMPTY while a record is in the air.
+    const [deckNo, setDeckNo] = useState<string | null>(null);
+    const [title, setTitle] = useState(DEFAULT_TITLE);
+
+    const active = useActiveSection();
+    const heroInView = useInView(heroRef);
+    const player = useYouTubePlayer(setPlaying, setTitle);
+
+    useReveal(rootRef);
+
+    heroInViewRef.current = heroInView;
+    // Non-rotating wrappers, so their size doesn't wobble while the records spin.
+    const deckTarget = () => (heroInViewRef.current ? heroRecordRef.current : miniRecordRef.current);
+    const slot = (no: string) => document.querySelector(`[data-disc="${no}"]`)?.parentElement ?? null;
+
+    const [toast, setToast] = useState<string | null>(null);
+    const [videoOpen, setVideoOpen] = useState(false);
+    const videoRef = useRef<HTMLDivElement>(null);
+    const videoOriginRef = useRef<DOMRect | null>(null);
+
+    // Transform that shrinks the video back into the box it came from.
+    const originTransform = () => {
+        const el = videoRef.current;
+        const origin = videoOriginRef.current;
+        if (!el || !origin) return null;
+        const end = el.getBoundingClientRect();
+        const dx = origin.left + origin.width / 2 - (end.left + end.width / 2);
+        const dy = origin.top + origin.height / 2 - (end.top + end.height / 2);
+        const scale = Math.max(origin.width / end.width, 0.08);
+        return `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${scale})`;
+    };
+
+    // The video grows out of the box that was clicked, already playing.
+    const openVideo = (e: ReactMouseEvent<HTMLElement>) => {
+        videoOriginRef.current = e.currentTarget.getBoundingClientRect();
+        setVideoOpen(true);
+        setTouched(true);
+        if (!playing) {
+            player.play();
         }
     };
 
-    return (
-        <div className={`min-h-screen transition-colors duration-300 font-sans ${darkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'}`}>
+    const closeVideo = () => {
+        const el = videoRef.current;
+        const from = originTransform();
+        if (!el || !from || prefersReducedMotion()) {
+            setVideoOpen(false);
+            return;
+        }
+        el.animate(
+            [
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                { transform: from, opacity: 0 },
+            ],
+            { duration: 450, easing: 'cubic-bezier(0.5, 0, 0.75, 0)' }
+        ).onfinish = () => setVideoOpen(false);
+    };
 
-            {/* --- Header / Navigation --- */}
-            <nav className={`fixed top-0 w-full z-50 border-b backdrop-blur-md transition-colors duration-300 ${darkMode ? 'bg-zinc-950/80 border-zinc-800' : 'bg-white/80 border-zinc-200'}`}>
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div
-                        className="text-xl font-bold tracking-tight cursor-pointer flex items-center gap-2 group"
-                        onClick={() => scrollTo('home')}
-                    >
-                        <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold group-hover:scale-105 transition-transform">JS</span>
-                        <span className="hidden sm:block">Juan Sebastián Saracco</span>
+    useLayoutEffect(() => {
+        if (!videoOpen || prefersReducedMotion()) return;
+        const el = videoRef.current;
+        const from = originTransform();
+        if (!el || !from) return;
+        el.animate(
+            [
+                { transform: from, opacity: 0.3 },
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+            ],
+            { duration: 650, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+        );
+    }, [videoOpen]);
+
+    useEffect(() => {
+        if (!videoOpen) return;
+        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeVideo();
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [videoOpen]);
+    const [themeSpin, setThemeSpin] = useState(0);
+
+    // Show what's playing in the browser tab.
+    useEffect(() => {
+        document.title = playing ? `▶ ${title} · Juan Saracco` : 'Juan Sebastián Saracco · Software Engineer';
+    }, [playing, title]);
+
+    useEffect(() => {
+        if (!toast) return;
+        const t = window.setTimeout(() => setToast(null), 2600);
+        return () => window.clearTimeout(t);
+    }, [toast]);
+
+    const onEmail = () => {
+        navigator.clipboard?.writeText(EMAIL).catch(() => {});
+        setToast('Email copied. Opening Gmail…');
+    };
+
+    // Flip the record: the new side spreads from the button like a spinning disc,
+    // while the old one drops back like a record being lifted off the platter.
+    const toggleTheme = (e: ReactMouseEvent<HTMLButtonElement>) => {
+        const next = theme === 'dark' ? 'light' : 'dark';
+        setThemeSpin((n) => n + 1);
+        const doc = document as Document & {
+            startViewTransition?: (cb: () => void) => { ready: Promise<void> };
+        };
+        if (!doc.startViewTransition || prefersReducedMotion()) {
+            setTheme(next);
+            return;
+        }
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+
+        const transition = doc.startViewTransition(() => {
+            flushSync(() => setTheme(next));
+        });
+        transition.ready.then(() => {
+            const easing = 'cubic-bezier(0.7, 0, 0.2, 1)';
+            document.documentElement.animate(
+                {
+                    clipPath: [
+                        `circle(0px at ${x}px ${y}px)`,
+                        `circle(${r * 0.18}px at ${x}px ${y}px)`,
+                        `circle(${r}px at ${x}px ${y}px)`,
+                    ],
+                    transform: ['rotate(-25deg)', 'rotate(-12deg)', 'rotate(0deg)'],
+                    transformOrigin: [`${x}px ${y}px`, `${x}px ${y}px`, `${x}px ${y}px`],
+                },
+                { duration: 1100, easing, pseudoElement: '::view-transition-new(root)' }
+            );
+            document.documentElement.animate(
+                {
+                    transform: ['scale(1)', 'scale(0.92)'],
+                    borderRadius: ['0px', '28px'],
+                    opacity: [1, 0.55],
+                },
+                { duration: 1100, easing, pseudoElement: '::view-transition-old(root)' }
+            );
+        });
+    };
+
+    const togglePlay = () => {
+        setTouched(true);
+        if (playing) {
+            player.pause();
+            setPlaying(false);
+        } else {
+            player.play();
+        }
+    };
+
+    // Takes a track's record out, puts it on the deck and returns the previous one.
+    const selectTrack = (no: string) => {
+        setTouched(true);
+
+        const flight = ++flightRef.current;
+
+        if (current === no) {
+            flyRecord(rootRef.current, deckTarget(), () => slot(no), no, labelColor(no));
+            setDeckNo(null);
+            setCurrent(null);
+            setTitle(DEFAULT_TITLE);
+            player.cue(DEFAULT_SONG);
+            setPlaying(false);
+            return;
+        }
+
+        const previous = current;
+        if (previous) flyRecord(rootRef.current, deckTarget(), () => slot(previous), previous, labelColor(previous));
+        setDeckNo(EMPTY);
+        flyRecord(rootRef.current, slot(no), deckTarget, no, labelColor(no), () => {
+            if (flightRef.current === flight) setDeckNo(no);
+        });
+        setCurrent(no);
+        setTitle('Loading…');
+        player.load(SONGS[no] ?? DEFAULT_SONG);
+    };
+
+    const scrollTo = (id: string) => {
+        document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+        setMenuOpen(false);
+    };
+
+    let charIndex = 0;
+
+    const renderDisc = (no: string) => (
+        <span
+            className={`track__disc track__disc--${labelColor(no)}${current === no ? ' is-out' : ''}`}
+            data-disc={no}
+            aria-hidden="true"
+        >
+            <span className="track__disc-label">{no === 'Bonus' ? '★' : no}</span>
+        </span>
+    );
+
+    return (
+        <div
+            ref={rootRef}
+            className={`site has-js${playing ? ' is-playing' : ''}`}
+            data-theme={theme}
+        >
+            {/* --- Nav --- */}
+            <header className="nav">
+                <div className="wrap nav__inner">
+                    <button className="nav__brand" onClick={() => scrollTo('home')} aria-label="Back to top">
+                        <span className="nav__disc" aria-hidden="true" />
+                        <span>Juan Saracco</span>
+                    </button>
+
+                    <div className="now-playing" aria-live="polite">
+                        <span className="eq" aria-hidden="true">
+                            <span />
+                            <span />
+                            <span />
+                            <span />
+                        </span>
+                        <span>{playing ? 'Now playing:' : 'On the deck:'}</span>
+                        <button
+                            key={title}
+                            className="now-playing__title is-changing"
+                            onClick={openVideo}
+                            title="Watch the video"
+                        >
+                            {title}
+                        </button>
                     </div>
 
-                    {/* Desktop Nav */}
-                    <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-                        {['About', 'Projects', 'Experience', 'Skills', 'Contact'].map((item) => (
+                    <nav className="nav__links" aria-label="Sections">
+                        {SECTIONS.map((s) => (
                             <button
-                                key={item}
-                                onClick={() => scrollTo(item.toLowerCase())}
-                                className={`hover:text-blue-500 transition-colors ${activeSection === item.toLowerCase() ? 'text-blue-500' : (darkMode ? 'text-zinc-400' : 'text-zinc-600')}`}
+                                key={s.id}
+                                className="nav__link"
+                                aria-current={active === s.id ? 'true' : undefined}
+                                onClick={() => scrollTo(s.id)}
                             >
-                                {item}
+                                {s.label}
                             </button>
                         ))}
-                        <div className="w-px h-4 bg-zinc-700 mx-2"></div>
-                        <button
-                            onClick={toggleTheme}
-                            className={`p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-zinc-200 text-zinc-600'}`}
-                        >
-                            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-                        </button>
-                    </div>
+                    </nav>
 
-                    {/* Mobile Menu Toggle */}
-                    <div className="md:hidden flex items-center gap-4">
-                        <button onClick={toggleTheme} className={darkMode ? 'text-zinc-400' : 'text-zinc-600'}>
-                            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-                        </button>
-                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={darkMode ? 'text-zinc-100' : 'text-zinc-900'}>
-                            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                        </button>
-                    </div>
+                    <button
+                        className="icon-btn theme-btn"
+                        onClick={toggleTheme}
+                        aria-label={theme === 'dark' ? 'Flip to the light side' : 'Flip to the dark side'}
+                        title="Flip the record"
+                    >
+                        <span key={themeSpin} className={`theme-btn__icon${themeSpin ? ' is-flipping' : ''}`}>
+                            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                        </span>
+                    </button>
+
+                    <button
+                        className="icon-btn nav__menu-btn"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        aria-expanded={menuOpen}
+                        aria-label="Menu"
+                    >
+                        {menuOpen ? <X size={18} /> : <Menu size={18} />}
+                    </button>
                 </div>
 
-                {/* Mobile Nav Dropdown */}
-                {isMenuOpen && (
-                    <div className={`md:hidden absolute w-full border-b ${darkMode ? 'bg-zinc-950 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                        <div className="flex flex-col p-6 gap-4">
-                            {['About', 'Projects', 'Experience', 'Skills', 'Contact'].map((item) => (
-                                <button
-                                    key={item}
-                                    onClick={() => scrollTo(item.toLowerCase())}
-                                    className="text-left py-2 text-lg font-medium hover:text-blue-500"
-                                >
-                                    {item}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                {menuOpen && (
+                    <nav className="mobile-menu" aria-label="Sections">
+                        {SECTIONS.map((s) => (
+                            <button key={s.id} className="nav__link" onClick={() => scrollTo(s.id)}>
+                                {s.label}
+                            </button>
+                        ))}
+                    </nav>
                 )}
-            </nav>
+            </header>
 
-            {/* --- Hero Section --- */}
-            <section id="home" className="pt-32 pb-20 px-6 min-h-screen flex flex-col justify-center">
-                <div className="max-w-5xl mx-auto w-full">
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight mb-6 animate-fade-in-up delay-100">
-                        <span className="bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
-                            Juan Sebastián
-                        </span> <br />
-                        Software Engineer
-                    </h1>
+            <main>
+                {/* --- Hero --- */}
+                <section id="home" className="hero" ref={heroRef}>
+                    <div className="wrap hero__grid">
+                        <div>
+                            <h1 className="hero__name" aria-label="Juan Sebastián Saracco">
+                                {NAME_WORDS.map((word) => (
+                                    <span className="hero__word" key={word} aria-hidden="true">
+                                        {word.split('').map((ch, i) => (
+                                            <span
+                                                key={i}
+                                                className="hero__char"
+                                                style={{ '--i': charIndex++ } as CSSProperties}
+                                            >
+                                                {ch}
+                                            </span>
+                                        ))}
+                                    </span>
+                                ))}
+                            </h1>
 
-                    <p className={`text-xl md:text-2xl max-w-2xl leading-relaxed mb-10 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'} animate-fade-in-up delay-200`}>
-                        Frontend-focused engineer (React, TypeScript, microfrontends) who builds products end to end, from the UI to the API and the CI pipeline. Currently leading the frontend of an ERP module at Hitachi Digital (ex GlobalLogic) for Claro.
-                    </p>
+                            <p className="hero__role">
+                                <strong>Software Engineer at Hitachi Digital.</strong> React and TypeScript, from pixel to
+                                production.
+                            </p>
 
-                    <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-300">
-                        <button
-                            onClick={() => scrollTo('projects')}
-                            className="px-8 py-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all hover:scale-105 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
-                        >
-                            View Projects <ArrowRight size={18} />
-                        </button>
-                        <a
-                            href={resume}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`px-8 py-4 rounded-full border font-medium transition-all hover:scale-105 flex items-center justify-center gap-2 ${darkMode ? 'border-zinc-700 hover:bg-zinc-800 text-zinc-300' : 'border-zinc-300 hover:bg-zinc-100 text-zinc-700'}`}
-                        >
-                            View Resume <ExternalLink size={18} />
-                        </a>
-                    </div>
-                </div>
-
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-50">
-                    <ChevronDown size={24} />
-                </div>
-            </section>
-
-            {/* --- About Section --- */}
-            <section id="about" className={`py-24 px-6 ${darkMode ? 'bg-zinc-900/30' : 'bg-zinc-100/50'}`}>
-                <div className="max-w-4xl mx-auto">
-                    <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-                        <span className="text-blue-500">01.</span> About Me
-                    </h2>
-
-                    <div className="grid md:grid-cols-5 gap-12 items-start">
-                        <div className="md:col-span-2">
-                            <div className="aspect-square rounded-2xl overflow-hidden bg-zinc-800 relative group">
-                                {/* Placeholder for Profile Image */}
-                                <div className="absolute inset-0 opacity-20 group-hover:opacity-10 transition-opacity"></div>
-                                <div className="w-full flex items-center justify-center">
-                                    <img src={profileImage} alt="Profile" className="w-full object-cover" />
-                                </div>
+                            <div className="hero__actions">
+                                <button className="btn btn--primary" onClick={() => scrollTo('side-b')}>
+                                    Listen to Side B
+                                </button>
+                                <a className="btn" href={resume} target="_blank" rel="noopener noreferrer">
+                                    <Download size={18} /> Download CV
+                                </a>
                             </div>
                         </div>
 
-                        <div className="md:col-span-3 space-y-6 text-lg leading-relaxed">
-                            <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                I'm a Software Engineer at Hitachi Digital (ex GlobalLogic), where I own the frontend of a critical module in Claro's ERP re-engineering: React, TypeScript, microfrontends, Storybook and unit testing.
+                        <Turntable
+                            playing={playing}
+                            hint={!touched}
+                            deckNo={deckNo}
+                            recordRef={heroRecordRef}
+                            onToggle={togglePlay}
+                        />
+                    </div>
+                </section>
+
+                {/* --- Liner notes --- */}
+                <section id="notes" className="section">
+                    <div className="wrap notes">
+                        <div className="sleeve" data-reveal tabIndex={0} aria-label="Photo of Juan">
+                            <div className="sleeve__record" aria-hidden="true" />
+                            <div className="sleeve__cover">
+                                <img src={profileImage} alt="Line drawing of Juan Sebastián Saracco" />
+                            </div>
+                        </div>
+
+                        <div className="notes__text">
+                            <h2 className="section__title" data-reveal style={{ marginBottom: 32 }}>
+                                Liner notes
+                            </h2>
+                            <p data-reveal style={{ '--d': 1 } as CSSProperties}>
+                                I'm a Software Engineer at <mark className="hl">Hitachi Digital</mark>, where I own the frontend of a{' '}
+                                <mark className="hl">critical module</mark> in
+                                Claro's ERP re-engineering.
                             </p>
-                            <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                Before that, at VML, I built pixel-perfect interfaces for Microsoft campaigns reaching millions of users, and led an internal .NET tool that improved the team's delivery metrics.
+                            <p data-reveal style={{ '--d': 2 } as CSSProperties}>
+                                Before that, at VML, I built pixel-perfect interfaces for Microsoft campaigns reaching
+                                <mark className="hl">millions of users</mark>, and led an internal <mark className="hl">.NET tool</mark> that improved the team's delivery metrics.
+                                Outside work I ship <mark className="hl">full products end to end</mark>, with CI, quality gates and automatic deploys.
                             </p>
-                            <p className={darkMode ? 'text-zinc-300' : 'text-zinc-600'}>
-                                Outside work I ship full products end to end, like TD Autos, my thesis at Escuela Da Vinci, with CI, quality gates and automatic deploys.
+                            <p className="notes__meta" data-reveal style={{ '--d': 3 } as CSSProperties}>
+                                Systems Analysis at Escuela Da Vinci, 2024 to 2026. Based in Buenos Aires, Argentine and
+                                Italian citizen.
                             </p>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* --- Projects Section --- */}
-            <section id="projects" className="py-24 px-6">
-                <div className="max-w-6xl mx-auto">
-                    <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-                        <span className="text-blue-500">02.</span> Featured Projects
-                    </h2>
 
-                    <div className="grid md:grid-cols-2 gap-8">
-                        {/* Project 1 */}
-                        <ProjectCard
-                            title="TD Autos"
-                            description="Thesis project. Helps used-car buyers decide safely (short diagnosis, profile-based recommendations, inspection and transfer checklists), lets dealerships manage inventory under a monthly subscription, and gives admins tools to onboard dealerships and supervise payments. Monorepo with a Laravel REST API, a React web SPA and a React Native app sharing pure TypeScript domain logic, plus GitHub Actions CI, a SonarCloud quality gate, Docker and automatic deploys on Vercel."
-                            tags={['React 19', 'TypeScript', 'React Native', 'Laravel 12', 'PostgreSQL', 'GitHub Actions', 'Docker']}
-                            darkMode={darkMode}
-                            icon={<Car size={40} className="text-blue-500" />}
-                            gitHubLink="https://github.com/saracco-juan/td-autos"
-                            externalLink="https://td-autos.vercel.app"
-                            partnerLink="https://github.com/marianogiardina"
-                            partnerName="Mariano Giardina"
-                        />
+                {/* --- Side A: work --- */}
+                <section id="side-a" className="section">
+                    <div className="wrap">
+                        <div className="section__head" data-reveal>
+                            <h2 className="section__title">
+                                Side A<span className="section__sub">Work</span>
+                            </h2>
+                            <p className="section__aside">Pick a record to hear it and read the track.</p>
+                        </div>
 
-                        {/* Project 2 */}
-                        <ProjectCard
-                            title="J-gym"
-                            description="Mobile-first PWA to track gym workouts around progressive overload. Built with architecture discipline: pure domain logic in src/core, the repository pattern in src/infrastructure, and a UI that never touches Supabase directly."
-                            tags={['Next.js 16', 'React 19', 'TypeScript', 'Tailwind', 'Supabase', 'Zustand', 'Jest']}
-                            darkMode={darkMode}
-                            icon={<Dumbbell size={40} className="text-emerald-500" />}
-                            gitHubLink="https://github.com/saracco-juan/J-gym"
-                            externalLink="https://juangym.vercel.app"
-                            partnerLink=""
-                            partnerName=""
-                        />
-
-                        {/* Project 3 */}
-                        <ProjectCard
-                            title="La Silbatina"
-                            description="Anonymous message wall for Argentine football fans: each fan gets 5 'whistles' to vote, and the most whistled message tops the board. No signup, only a hashed cookie/IP is stored (privacy by design), plus admin moderation."
-                            tags={['Node.js', 'PostgreSQL', 'Privacy by design']}
-                            darkMode={darkMode}
-                            icon={<Megaphone size={40} className="text-orange-500" />}
-                            gitHubLink="https://github.com/saracco-juan/silbatina"
-                            externalLink="https://github.com/saracco-juan/silbatina"
-                            partnerLink=""
-                            partnerName=""
-                        />
-
-                        {/* Project 4 */}
-                        <ProjectCard
-                            title="Buenas Lecturas"
-                            description="Virtual library to track your reading and write reviews, with book search via Open Library."
-                            tags={['Java', 'Spring Boot', 'BCrypt', 'REST API']}
-                            darkMode={darkMode}
-                            icon={<Book size={40} className="text-violet-500" />}
-                            gitHubLink="https://github.com/saracco-juan/BuenasLecturas"
-                            externalLink="https://github.com/saracco-juan/BuenasLecturas"
-                            partnerLink=""
-                            partnerName=""
-                        />
-
-                        {/* Project 5 */}
-                        <ProjectCard
-                            title="One Up Gym"
-                            description="A Laravel-based class scheduling system. It implements recurrent weekly classes, dynamic time-slot generation, database-driven persistence, user roles, and strict validation for overlapping bookings. Built with Blade templates, service-layer logic, and clean architecture principles."
-                            tags={['Laravel', 'Blade', 'MySQL', 'Team Project', 'API Rest']}
-                            darkMode={darkMode}
-                            icon={<Dumbbell size={40} className="text-blue-500" />}
-                            gitHubLink="https://github.com/marianogiardina/OneUpGym"
-                            externalLink="https://github.com/marianogiardina/OneUpGym"
-                            partnerLink="https://github.com/marianogiardina"
-                            partnerName="Mariano Giardina"
-                        />
-
-                        {/* Project 6 */}
-                        <ProjectCard
-                            title="Dolar App"
-                            description="A currency-tracking web app that consumes public APIs to display official, blue, MEP, and other dollar exchange rates in Argentina. Built with a component-based architecture, clean state management, reusable UI patterns, error handling, and loading states. Focused on improving API integration, formatting utilities, asynchronous flows, and responsive UI behaviors."
-                            tags={['HTML', 'CSS', 'JavaScript', 'API Rest']}
-                            darkMode={darkMode}
-                            icon={<DollarSign size={40} className="text-green-500" />}
-                            gitHubLink="https://github.com/juan-saracco/Dolar-APP"
-                            externalLink="https://dolar-app.netlify.app/"
-                            partnerLink=""
-                            partnerName=""
-                        />
+                        <ol className="tracklist">
+                            {JOBS.map((job, i) => {
+                                const open = current === job.no;
+                                return (
+                                    <li
+                                        key={job.no}
+                                        className={`track${open ? ' is-open' : ''}`}
+                                        data-reveal
+                                        style={{ '--d': i } as CSSProperties}
+                                    >
+                                        <button
+                                            className="track__row"
+                                            aria-expanded={open}
+                                            aria-controls={`panel-${job.no}`}
+                                            onClick={() => selectTrack(job.no)}
+                                        >
+                                            <span className="track__no">{job.no}</span>
+                                            <span className="track__title">
+                                                {job.role}
+                                                <span className="track__meta">
+                                                    {job.company}
+                                                    <span className="track__period-inline">, {job.period}</span>
+                                                </span>
+                                            </span>
+                                            <span className="track__period">{job.period}</span>
+                                            <span className="track__sleeve">{renderDisc(job.no)}</span>
+                                        </button>
+                                        <div className="track__panel" id={`panel-${job.no}`}>
+                                            <div className="track__panel-inner">
+                                                <div className="track__body">
+                                                    <ul>
+                                                        {job.bullets.map((b) => (
+                                                            <li key={b}>{b}</li>
+                                                        ))}
+                                                    </ul>
+                                                    <ul className="stack" aria-label="Stack">
+                                                        {job.stack.map((s) => (
+                                                            <li key={s}>{s}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ol>
                     </div>
+                </section>
 
-                    <HighlightCard
-                        title="Internal tooling at VML"
-                        description="Led the development of an internal .NET tool used by the email team to track productivity and delivery metrics, and improved processes in QA, version control and documentation."
-                        tags={['C#', '.NET', 'Team Work']}
-                        darkMode={darkMode}
-                    />
+                {/* --- Side B: projects --- */}
+                <section id="side-b" className="section">
+                    <div className="wrap">
+                        <div className="section__head" data-reveal>
+                            <h2 className="section__title">
+                                Side B<span className="section__sub">Projects</span>
+                            </h2>
+                            <p className="section__aside">Things I built outside work. Each one has its own song.</p>
+                        </div>
 
-                </div>
-            </section>
-
-            {/* --- Experience Section --- */}
-            <section id="experience" className={`py-24 px-6 ${darkMode ? 'bg-zinc-900/30' : 'bg-zinc-100/50'}`}>
-                <div className="max-w-3xl mx-auto">
-                    <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-                        <span className="text-blue-500">03.</span> Experience
-                    </h2>
-
-                    <div className="space-y-12 relative border-l-2 border-zinc-200 dark:border-zinc-800 ml-3 md:ml-6 pl-8 md:pl-12">
-
-                        <ExperienceItem
-                            role="Software Engineer"
-                            company="Hitachi Digital, ex GlobalLogic (Claro Client)"
-                            period="Jun 2025 - Present"
-                            description={[
-                                "Led the frontend of a new critical module in the re-engineering of a corporate ERP, with full ownership of the UI.",
-                                "Migrated legacy interfaces to a scalable microfrontends architecture.",
-                                "Mocked backend contracts so the team could develop locally without waiting on external services.",
-                                "Added Storybook and unit testing to the team's workflow, and used AI tools to speed up development."
-                            ]}
-                            current={true}
-                            darkMode={darkMode}
-                        />
-
-                        <ExperienceItem
-                            role="Frontend Developer (Email Engineering)"
-                            company="VML (Microsoft Client)"
-                            period="2023 - 2025"
-                            description={[
-                                "Built pixel-perfect HTML/CSS interfaces from designs, shipping 15+ deliveries per week for global campaigns reaching millions of users.",
-                                "Solved cross-client and cross-device compatibility issues, cutting the production bug rate by 20%.",
-                                "Led an internal .NET tool to track the team's productivity and delivery metrics.",
-                                "Managed end-to-end production cycles with SFMC and Marketo, and mentored junior developers.",
-                                "Documented internal processes, cutting onboarding for new developers from 3 to 2 months."
-                            ]}
-                            current={false}
-                            darkMode={darkMode}
-                        />
-
-                        <ExperienceItem
-                            role="Freelance Web Developer"
-                            company="Self-Employed"
-                            period="2022 - 2023"
-                            description={[
-                                "Built custom React websites for small businesses (Óptica Saracco).",
-                                "Implemented SEO optimizations improving client visibility.",
-                                "Translated Figma designs into functional code."
-                            ]}
-                            darkMode={darkMode}
-                            current={false}
-                        />
-
-                        <ExperienceItem
-                            role="Systems Analysis Student"
-                            company="Escuela Da Vinci"
-                            period="2024 - 2026"
-                            description={[
-                                "Thesis: TD Autos, a full product with web, mobile and API, built end to end in a team of two.",
-                                "Built full-stack academic projects in Java, Python and PHP with clean MVC architectures, authentication and relational databases.",
-                                "Designed ER diagrams, normalized schemas and optimized SQL queries.",
-                                "Coordinated team projects: task planning, version control and documentation."
-                            ]}
-                            darkMode={darkMode}
-                            current={true}
-                        />
+                        <ol className="tracklist">
+                            {PROJECTS.map((p, i) => {
+                                const open = current === p.no;
+                                return (
+                                    <li
+                                        key={p.no}
+                                        className={`track${open ? ' is-open' : ''}${p.bonus ? ' track--bonus' : ''}`}
+                                        data-reveal
+                                        style={{ '--d': i } as CSSProperties}
+                                    >
+                                        <button
+                                            className="track__row"
+                                            aria-expanded={open}
+                                            aria-controls={`panel-${p.no}`}
+                                            onClick={() => selectTrack(p.no)}
+                                        >
+                                            <span className="track__no">{p.no}</span>
+                                            <span className="track__title">
+                                                {p.title}
+                                                <span className="track__meta">{p.summary}</span>
+                                            </span>
+                                            <span className="track__period">{p.bonus ? 'Hidden track' : ''}</span>
+                                            <span className="track__sleeve">{renderDisc(p.no)}</span>
+                                        </button>
+                                        <div className="track__panel" id={`panel-${p.no}`}>
+                                            <div className="track__panel-inner">
+                                                <div className="track__body">
+                                                    {p.details.map((d) => (
+                                                        <p key={d}>{d}</p>
+                                                    ))}
+                                                    {p.partner && (
+                                                        <p>
+                                                            Built with{' '}
+                                                            <a
+                                                                className="text-link"
+                                                                href={p.partner.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                            >
+                                                                {p.partner.name}
+                                                            </a>
+                                                            .
+                                                        </p>
+                                                    )}
+                                                    <ul className="stack" aria-label="Stack">
+                                                        {p.stack.map((s) => (
+                                                            <li key={s}>{s}</li>
+                                                        ))}
+                                                    </ul>
+                                                    {(p.code || p.live) && (
+                                                        <div className="track__links">
+                                                            {p.live && (
+                                                                <a
+                                                                    className="text-link"
+                                                                    href={p.live}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    Open the live app <ArrowUpRight size={16} />
+                                                                </a>
+                                                            )}
+                                                            {p.code && (
+                                                                <a
+                                                                    className="text-link"
+                                                                    href={p.code}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    <Github size={16} /> See the code
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ol>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* --- Skills Section --- */}
-            <section id="skills" className="py-24 px-6">
-                <div className="max-w-5xl mx-auto">
-                    <h2 className="text-3xl font-bold mb-12 flex items-center gap-3">
-                        <span className="text-blue-500">04.</span> Technical Skills
-                    </h2>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        <SkillCard
-                            title="Front-End Core"
-                            skills={['React', 'TypeScript', 'JavaScript (ES6+)', 'Next.js', 'React Native', 'Microfrontends', 'Module Federation', 'Storybook', 'HTML5', 'CSS3/SASS', 'Tailwind CSS']}
-                            darkMode={darkMode}
-                        />
-                        <SkillCard
-                            title="Tools & Quality"
-                            skills={['Git / GitHub', 'GitHub Actions', 'Jenkins', 'Docker', 'Jest', 'SonarCloud', 'Figma', 'SFMC / AMPScript', 'AI agents for development']}
-                            darkMode={darkMode}
-                        />
-                        <SkillCard
-                            title="Backend Core"
-                            skills={['Node.js', 'Express', 'Java', 'Spring Boot', 'PHP', 'Laravel', 'PostgreSQL', 'Supabase', 'MySQL', 'Firebase', '.NET']}
-                            darkMode={darkMode}
-                        />
+                {/* --- Gear --- */}
+                <section id="gear" className="section">
+                    <div className="wrap">
+                        <div className="section__head" data-reveal>
+                            <h2 className="section__title">Gear</h2>
+                            <p className="section__aside">What I record with, day to day.</p>
+                        </div>
+                        <div className="credits">
+                            {GEAR.map((g, i) => (
+                                <div key={g.title} data-reveal style={{ '--d': i } as CSSProperties}>
+                                    <h3>{g.title}</h3>
+                                    <ul>
+                                        {g.items.map((item) => (
+                                            <li key={item}>{item}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* --- Contact Section --- */}
-            <section id="contact" className="py-32 px-6 text-center">
-                <div className="max-w-2xl mx-auto">
-                    <h2 className="text-blue-500 font-medium mb-4">05. Contact Me</h2>
-                    <h3 className="text-4xl md:text-5xl font-bold mb-6">Let's Work Together</h3>
-                    <p className={`text-lg mb-10 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                        I am always looking for new opportunities to leverage my skills in a challenging environment. Whether you have a question or just want to say hi, my inbox is always open.
-                    </p>
-
-                    <a
-                        href="mailto:juansaracco1212@gmail.com"
-                        className="inline-flex items-center gap-3 px-8 py-4 rounded-full border border-blue-500 text-blue-500 hover:bg-blue-500/10 transition-colors text-lg font-medium"
-                    >
-                        <Mail size={20} /> Say Hello
-                    </a>
-
-                    <div className="mt-16 flex justify-center gap-8">
-                        <SocialLink href="https://github.com/saracco-juan" icon={<Github size={24} />} label="GitHub" darkMode={darkMode} />
-                        <SocialLink href="https://www.linkedin.com/in/juan-saracco/" icon={<Linkedin size={24} />} label="LinkedIn" darkMode={darkMode} />
+                {/* --- Contact --- */}
+                <section id="contact" className="contact">
+                    <div className="wrap">
+                        <h2 className="section__title" data-reveal style={{ marginBottom: 20 }}>
+                            Let's talk
+                        </h2>
+                        <p className="contact__lead" data-reveal style={{ '--d': 1 } as CSSProperties}>
+                            Got a role, a project or a question? Write to me and I'll get back to you.
+                        </p>
+                        <a
+                            className="contact__mail"
+                            href={COMPOSE_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={onEmail}
+                            data-reveal
+                            style={{ '--d': 2 } as CSSProperties}
+                        >
+                            {EMAIL.split('@')[0]}
+                            <span className="contact__at" aria-hidden="true">@</span>
+                            {EMAIL.split('@')[1]}
+                        </a>
+                        <div className="contact__links" data-reveal style={{ '--d': 3 } as CSSProperties}>
+                            <a
+                                className="icon-btn"
+                                href={COMPOSE_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={onEmail}
+                                aria-label="Send me an email"
+                            >
+                                <Mail size={18} />
+                            </a>
+                            <a
+                                className="icon-btn"
+                                href="https://github.com/saracco-juan"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="GitHub"
+                            >
+                                <Github size={18} />
+                            </a>
+                            <a
+                                className="icon-btn"
+                                href="https://www.linkedin.com/in/juan-saracco/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="LinkedIn"
+                            >
+                                <Linkedin size={18} />
+                            </a>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </main>
 
-            {/* --- Footer --- */}
-            <footer className={`py-8 text-center text-sm ${darkMode ? 'text-zinc-600 bg-zinc-950' : 'text-zinc-400 bg-zinc-50'}`}>
-                <p>Designed & Built by Juan Sebastián Saracco</p>
-                <p className="mt-2 text-xs opacity-70">React · TypeScript · Tailwind CSS · Vite</p>
+            {/* --- Mini deck: follows you once the big turntable is out of view --- */}
+            <aside className={`mini-deck${heroInView ? '' : ' is-visible'}`} aria-label="Player">
+                <button
+                    ref={miniRecordRef}
+                    className="mini-deck__record"
+                    onClick={() => (current ? scrollTo(current.startsWith('A') ? 'side-a' : 'side-b') : scrollTo('home'))}
+                    aria-label="Go to the track on the deck"
+                >
+                    <span className="mini-deck__disc">
+                        <span
+                            className={`mini-deck__label label--${labelColor(deckNo)}${deckNo === EMPTY ? ' is-empty' : ''}`}
+                        >
+                            {deckNo === 'Bonus' ? '★' : deckNo === EMPTY ? '' : deckNo ?? 'JS'}
+                        </span>
+                    </span>
+                </button>
+                <button className="mini-deck__text" onClick={openVideo} title="Watch the video">
+                    <span className="mini-deck__state">{playing ? 'Now playing · tap to watch' : 'On the deck · tap to watch'}</span>
+                    <span className="mini-deck__title">{title}</span>
+                </button>
+                <button
+                    className="deck__play mini-deck__play"
+                    onClick={togglePlay}
+                    aria-label={playing ? 'Pause' : 'Play'}
+                    aria-pressed={playing}
+                >
+                    {playing ? <Pause size={16} /> : <Play size={16} />}
+                </button>
+            </aside>
+
+            <div className={`toast${toast ? ' is-visible' : ''}`} role="status">
+                {toast}
+            </div>
+
+            {/* The YouTube player: tucked away, or opened as a video when the song title is clicked */}
+            <div
+                className={`video-backdrop${videoOpen ? ' is-open' : ''}`}
+                onClick={closeVideo}
+                aria-hidden="true"
+            />
+            <div
+                ref={videoRef}
+                className={`yt-frame${videoOpen ? ' is-open' : ''}`}
+                role={videoOpen ? 'dialog' : undefined}
+                aria-label={videoOpen ? title : undefined}
+                aria-hidden={!videoOpen}
+            >
+                <div className="yt-frame__screen">
+                    <div id="yt-player" />
+                </div>
+                {videoOpen && (
+                    <div className="yt-frame__bar">
+                        <span className="yt-frame__title">{title}</span>
+                        <button className="icon-btn" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'}>
+                            {playing ? <Pause size={16} /> : <Play size={16} />}
+                        </button>
+                        <button className="icon-btn" onClick={closeVideo} aria-label="Close the video">
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            <footer className="footer">
+                <div className="wrap">Designed and built by Juan Sebastián Saracco with React and TypeScript.</div>
             </footer>
-
         </div>
     );
 };
 
-/* --- Sub-Components --- */
+/* ------------------------------------------------------------------
+   Turntable
+------------------------------------------------------------------- */
 
-const ProjectCard = ({ title, description, tags, darkMode, icon, gitHubLink, externalLink, partnerLink, partnerName }) => (
-    <div
-        className={`flex flex-col group relative p-8 rounded-2xl border transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${darkMode
-            ? 'bg-zinc-900 border-zinc-800 hover:border-blue-500/50 hover:shadow-blue-900/10'
-            : 'bg-white border-zinc-200 hover:border-blue-400 hover:shadow-blue-200/20'
-            }`}
-    >
-        <div className="flex justify-between items-start mb-6">
-            <div className={`p-3 rounded-lg ${darkMode ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
-                {icon}
-            </div>
-            <div className="flex gap-4">
-                <a href={gitHubLink} target="_blank" className={`transition-colors ${darkMode ? 'text-zinc-400 hover:text-blue-400' : 'text-zinc-500 hover:text-blue-600'}`}>
-                    <Github size={20} />
-                </a>
-                <a href={externalLink} target="_blank" className={`transition-colors ${darkMode ? 'text-zinc-400 hover:text-blue-400' : 'text-zinc-500 hover:text-blue-600'}`}>
-                    <ExternalLink size={20} />
-                </a>
-            </div>
-        </div>
+type TurntableProps = {
+    playing: boolean;
+    hint: boolean;
+    deckNo: string | null;
+    recordRef: RefObject<HTMLButtonElement | null>;
+    onToggle: () => void;
+};
 
-        <h3 className="text-xl font-bold mb-3 group-hover:text-blue-500 transition-colors">{title}</h3>
-        <p className={`mb-6 text-sm leading-relaxed ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            {description} <br /> {partnerLink && <span className="text-blue-500">(This project was developed together with <a href={partnerLink} target="_blank">{partnerName}</a>)</span>}
-        </p>
-
-        <div className="flex flex-wrap gap-2 mt-auto">
-            {tags.map((tag, i) => (
-                <span
-                    key={i}
-                    className={`text-xs px-3 py-1 rounded-full font-medium ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
-                        }`}
-                >
-                    {tag}
-                </span>
-            ))}
-        </div>
-    </div>
-);
-
-const ExperienceItem = ({ role, company, period, description, current, darkMode }) => (
-    <div className="relative">
-        <span className={`absolute -left-[41px] md:-left-[57px] top-1 h-5 w-5 rounded-full border-4 ${current
-            ? 'bg-blue-500 border-blue-900'
-            : (darkMode ? 'bg-zinc-950 border-zinc-700' : 'bg-white border-zinc-300')
-            }`}></span>
-
-        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between mb-2">
-            <h3 className="text-xl font-bold">{role}</h3>
-            <span className={`text-sm font-mono ${darkMode ? 'text-zinc-500' : 'text-zinc-500'}`}>{period}</span>
-        </div>
-
-        <h4 className="text-blue-500 font-medium mb-4">{company}</h4>
-
-        <ul className={`space-y-2 list-disc list-inside ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            {description.map((item, index) => (
-                <li key={index} className="text-sm md:text-base">{item}</li>
-            ))}
-        </ul>
-    </div>
-);
-
-const SkillCard = ({ title, skills, darkMode }) => (
-    <div className={`p-6 rounded-2xl ${darkMode ? 'bg-zinc-900/50' : 'bg-white border border-zinc-100'}`}>
-        <h3 className="text-lg font-bold mb-4 text-blue-500">{title}</h3>
-        <div className="flex flex-wrap gap-2">
-            {skills.map((skill) => (
-                <span
-                    key={skill}
-                    className={`px-3 py-2 text-sm rounded-md transition-all hover:scale-105 cursor-default ${darkMode ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                        }`}
-                >
-                    {skill}
-                </span>
-            ))}
-        </div>
-    </div>
-);
-
-const SocialLink = ({ href, icon, label, darkMode }) => (
-    <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`group flex flex-col items-center gap-2 transition-colors ${darkMode ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'}`}
-    >
-        <div className="p-3 rounded-full transition-all group-hover:-translate-y-1 group-hover:shadow-lg bg-transparent group-hover:bg-blue-500 group-hover:text-white">
-            {icon}
-        </div>
-        <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">{label}</span>
-    </a>
-);
-
-const HighlightCard = ({ title, description, tags, darkMode }) => (
-    <div className="mt-8 p-8 rounded-2xl border transition-colors hover:border-blue-500/50 group relative overflow-hidden"
-        style={{
-            backgroundColor: darkMode ? 'rgba(24, 24, 27, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-            borderColor: darkMode ? '#27272a' : '#e4e4e7'
-        }}>
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div>
-                <h3 className="text-2xl font-bold mb-2">{title}</h3>
-                <p className={`max-w-2xl ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                    {description}
-                </p>
-            </div>
-            <div className="flex gap-2">
-                {tags.map((tag, i) => (
-                    <span key={i} className={`px-3 py-1 rounded-md text-sm font-medium ${darkMode ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-200 text-zinc-700'}`}>
-                        {tag}
+const Turntable = ({ playing, hint, deckNo, recordRef, onToggle }: TurntableProps) => (
+    <div className="deck">
+        <div className="platter">
+            <button
+                ref={recordRef}
+                className="record"
+                onClick={onToggle}
+                aria-label={playing ? 'Stop the record' : 'Play the record'}
+                aria-pressed={playing}
+            >
+                <span className="record__disc" aria-hidden="true">
+                    <span
+                        className={`record__label label--${labelColor(deckNo)}${deckNo === EMPTY ? ' is-empty' : ''}`}
+                    >
+                        <span className="record__label-text">
+                            <span className="record__label-mono">
+                                {deckNo === 'Bonus' ? '★' : deckNo === EMPTY ? '' : deckNo ?? 'JS'}
+                            </span>
+                            <span className="record__label-small">
+                                {deckNo === EMPTY
+                                    ? ''
+                                    : deckNo
+                                      ? deckNo.startsWith('A')
+                                          ? 'Side A'
+                                          : 'Side B'
+                                      : 'Juan Saracco'}
+                            </span>
+                        </span>
                     </span>
-                ))}
-            </div>
+                    <span className="record__hole" />
+                </span>
+                <span className="record__sheen" aria-hidden="true" />
+            </button>
         </div>
-        <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-blue-500/10 to-transparent pointer-events-none"></div>
+
+        <div className="tonearm" aria-hidden="true">
+            <span className="tonearm__pivot" />
+            <span className="tonearm__arm" />
+            <span className="tonearm__head" />
+        </div>
+
+        <div className="deck__controls">
+            <span className="deck__led" aria-hidden="true" />
+            <button
+                className={`deck__play${hint ? ' is-hint' : ''}`}
+                onClick={onToggle}
+                aria-label={playing ? 'Pause' : 'Play'}
+                aria-pressed={playing}
+            >
+                {playing ? <Pause size={18} /> : <Play size={18} />}
+            </button>
+        </div>
     </div>
 );
 
