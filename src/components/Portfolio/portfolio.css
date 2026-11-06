@@ -1203,7 +1203,7 @@ button.mini-deck__text:hover .mini-deck__title {
   place-items: center;
   background: repeating-radial-gradient(circle at center, #151515 0 1.4px, #050505 1.4px 2.8px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
-  transition: transform 0.5s var(--ease-out), opacity 0.35s ease 0.75s;
+  transition: transform 0.5s var(--ease-out), opacity 0.15s ease 0.9s;
 }
 
 .track__disc-label {
@@ -1454,16 +1454,6 @@ html {
   animation: eq 0.45s ease-in-out infinite alternate;
 }
 
-/* Big titles squeeze and stretch with the variable font */
-.section__title {
-  transition: font-variation-settings 1.6s var(--ease-out), letter-spacing 1.6s var(--ease-out);
-}
-
-.section__title:hover {
-  font-variation-settings: "wdth" 62;
-  letter-spacing: 0.02em;
-}
-
 /* Liner notes: a red highlighter sweeps over key words */
 .hl {
   background: linear-gradient(transparent 58%, color-mix(in srgb, var(--red) 35%, transparent) 58%) no-repeat;
@@ -1537,3 +1527,19 @@ html {
   transform: rotate(-1.5deg);
 }
 
+
+/* The deck is bare while a record is in the air */
+.record__label,
+.mini-deck__label {
+  transition: transform 0.35s var(--ease-out), opacity 0.2s ease;
+}
+
+.record__label.is-empty,
+.mini-deck__label.is-empty {
+  transform: scale(0.2);
+  opacity: 0;
+}
+
+.flying-disc span {
+  pointer-events: none;
+}

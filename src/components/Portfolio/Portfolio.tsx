@@ -204,7 +204,8 @@ const EMAIL = 'juansaracco1212@gmail.com';
 // Opens a ready-to-send email in Gmail; works even without a desktop mail app.
 const COMPOSE_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${EMAIL}&su=${encodeURIComponent('Hi Juan')}`;
 
-const labelColor = (no: string | null) => (no === null ? 'red' : no.startsWith('A') ? 'red' : no.startsWith('B') ? 'blue' : 'paper');
+const labelColor = (no: string | null) =>
+    no === 'Bonus' ? 'paper' : no === null || no.startsWith('A') ? 'red' : no.startsWith('B') ? 'blue' : 'paper';
 
 /* ------------------------------------------------------------------
    Hooks
@@ -356,39 +357,62 @@ function useYouTubePlayer(setPlaying: (p: boolean) => void, setTitle: (t: string
     };
 }
 
-// Animates a copy of a record from one element to another.
-function flyRecord(host: HTMLElement | null, from: Element | null, to: Element | null, label: string, color: string) {
-    if (!host || !from || !to || prefersReducedMotion()) return;
+// Flies a copy of a record from one element to another. The target is read on every
+// frame, so the record still lands in the right place while rows open, close or scroll.
+const EMPTY = '__empty';
+
+function flyRecord(
+    host: HTMLElement | null,
+    from: Element | null,
+    getTo: () => Element | null,
+    label: string,
+    color: string,
+    onDone?: () => void
+) {
+    const done = () => onDone?.();
+    const firstTo = getTo();
+    if (!host || !from || !firstTo || prefersReducedMotion()) {
+        done();
+        return;
+    }
     const a = from.getBoundingClientRect();
-    const b = to.getBoundingClientRect();
-    if (!a.width || !b.width) return;
+    if (!a.width) {
+        done();
+        return;
+    }
 
     const disc = document.createElement('div');
     disc.className = `flying-disc flying-disc--${color}`;
-    disc.innerHTML = `<span>${label}</span>`;
-    Object.assign(disc.style, {
-        left: `${a.left}px`,
-        top: `${a.top}px`,
-        width: `${a.width}px`,
-        height: `${a.height}px`,
-    });
+    const span = document.createElement('span');
+    span.textContent = label === 'Bonus' ? '★' : label;
+    disc.appendChild(span);
     host.appendChild(disc);
 
-    const dx = b.left + b.width / 2 - (a.left + a.width / 2);
-    const dy = b.top + b.height / 2 - (a.top + a.height / 2);
-    const scale = b.width / a.width;
+    const duration = 900;
+    const start = performance.now();
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const ax = a.left + a.width / 2;
+    const ay = a.top + a.height / 2;
 
-    disc.animate(
-        [
-            { transform: 'translate(0, 0) scale(1) rotate(0deg)' },
-            {
-                transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 90}px) scale(${(1 + scale) / 2}) rotate(220deg)`,
-                offset: 0.5,
-            },
-            { transform: `translate(${dx}px, ${dy}px) scale(${scale}) rotate(420deg)` },
-        ],
-        { duration: 850, easing: 'cubic-bezier(0.5, 0, 0.2, 1)' }
-    ).onfinish = () => disc.remove();
+    const step = (now: number) => {
+        const t = Math.min(1, (now - start) / duration);
+        const e = ease(t);
+        const b = (getTo() ?? firstTo).getBoundingClientRect();
+        const size = a.width + (b.width - a.width) * e;
+        const cx = ax + (b.left + b.width / 2 - ax) * e;
+        const cy = ay + (b.top + b.height / 2 - ay) * e - Math.sin(Math.PI * e) * 90;
+        disc.style.width = `${size}px`;
+        disc.style.height = `${size}px`;
+        disc.style.left = `${cx - size / 2}px`;
+        disc.style.top = `${cy - size / 2}px`;
+        disc.style.transform = `rotate(${420 * e}deg)`;
+        if (t < 1) requestAnimationFrame(step);
+        else {
+            disc.remove();
+            done();
+        }
+    };
+    requestAnimationFrame(step);
 }
 
 /* ------------------------------------------------------------------
@@ -398,14 +422,18 @@ function flyRecord(host: HTMLElement | null, from: Element | null, to: Element |
 const Portfolio = () => {
     const rootRef = useRef<HTMLDivElement>(null);
     const heroRef = useRef<HTMLElement>(null);
-    const heroRecordRef = useRef<HTMLSpanElement>(null);
-    const miniRecordRef = useRef<HTMLSpanElement>(null);
+    const heroRecordRef = useRef<HTMLButtonElement>(null);
+    const miniRecordRef = useRef<HTMLButtonElement>(null);
+    const heroInViewRef = useRef(true);
+    const flightRef = useRef(0);
 
     const [theme, setTheme] = useState<'dark' | 'light'>('light');
     const [menuOpen, setMenuOpen] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [touched, setTouched] = useState(false);
     const [current, setCurrent] = useState<string | null>(null);
+    // What the deck shows: a track number, null for the JS record, or EMPTY while a record is in the air.
+    const [deckNo, setDeckNo] = useState<string | null>(null);
     const [title, setTitle] = useState(DEFAULT_TITLE);
 
     const active = useActiveSection();
@@ -414,8 +442,10 @@ const Portfolio = () => {
 
     useReveal(rootRef);
 
-    const deckTarget = () => (heroInView ? heroRecordRef.current : miniRecordRef.current);
-    const slot = (no: string) => document.querySelector(`[data-disc="${no}"]`);
+    heroInViewRef.current = heroInView;
+    // Non-rotating wrappers, so their size doesn't wobble while the records spin.
+    const deckTarget = () => (heroInViewRef.current ? heroRecordRef.current : miniRecordRef.current);
+    const slot = (no: string) => document.querySelector(`[data-disc="${no}"]`)?.parentElement ?? null;
 
     const [toast, setToast] = useState<string | null>(null);
     const [videoOpen, setVideoOpen] = useState(false);
@@ -557,8 +587,11 @@ const Portfolio = () => {
     const selectTrack = (no: string) => {
         setTouched(true);
 
+        const flight = ++flightRef.current;
+
         if (current === no) {
-            flyRecord(rootRef.current, deckTarget(), slot(no), no, labelColor(no));
+            flyRecord(rootRef.current, deckTarget(), () => slot(no), no, labelColor(no));
+            setDeckNo(null);
             setCurrent(null);
             setTitle(DEFAULT_TITLE);
             player.cue(DEFAULT_SONG);
@@ -566,8 +599,12 @@ const Portfolio = () => {
             return;
         }
 
-        if (current) flyRecord(rootRef.current, deckTarget(), slot(current), current, labelColor(current));
-        flyRecord(rootRef.current, slot(no), deckTarget(), no, labelColor(no));
+        const previous = current;
+        if (previous) flyRecord(rootRef.current, deckTarget(), () => slot(previous), previous, labelColor(previous));
+        setDeckNo(EMPTY);
+        flyRecord(rootRef.current, slot(no), deckTarget, no, labelColor(no), () => {
+            if (flightRef.current === flight) setDeckNo(no);
+        });
         setCurrent(no);
         setTitle('Loading…');
         player.load(SONGS[no] ?? DEFAULT_SONG);
@@ -706,7 +743,7 @@ const Portfolio = () => {
                         <Turntable
                             playing={playing}
                             hint={!touched}
-                            current={current}
+                            deckNo={deckNo}
                             recordRef={heroRecordRef}
                             onToggle={togglePlay}
                         />
@@ -980,13 +1017,16 @@ const Portfolio = () => {
             {/* --- Mini deck: follows you once the big turntable is out of view --- */}
             <aside className={`mini-deck${heroInView ? '' : ' is-visible'}`} aria-label="Player">
                 <button
+                    ref={miniRecordRef}
                     className="mini-deck__record"
                     onClick={() => (current ? scrollTo(current.startsWith('A') ? 'side-a' : 'side-b') : scrollTo('home'))}
                     aria-label="Go to the track on the deck"
                 >
-                    <span className="mini-deck__disc" ref={miniRecordRef}>
-                        <span className={`mini-deck__label label--${labelColor(current)}`}>
-                            {current === 'Bonus' ? '★' : current ?? 'JS'}
+                    <span className="mini-deck__disc">
+                        <span
+                            className={`mini-deck__label label--${labelColor(deckNo)}${deckNo === EMPTY ? ' is-empty' : ''}`}
+                        >
+                            {deckNo === 'Bonus' ? '★' : deckNo === EMPTY ? '' : deckNo ?? 'JS'}
                         </span>
                     </span>
                 </button>
@@ -1051,26 +1091,37 @@ const Portfolio = () => {
 type TurntableProps = {
     playing: boolean;
     hint: boolean;
-    current: string | null;
-    recordRef: RefObject<HTMLSpanElement | null>;
+    deckNo: string | null;
+    recordRef: RefObject<HTMLButtonElement | null>;
     onToggle: () => void;
 };
 
-const Turntable = ({ playing, hint, current, recordRef, onToggle }: TurntableProps) => (
+const Turntable = ({ playing, hint, deckNo, recordRef, onToggle }: TurntableProps) => (
     <div className="deck">
         <div className="platter">
             <button
+                ref={recordRef}
                 className="record"
                 onClick={onToggle}
                 aria-label={playing ? 'Stop the record' : 'Play the record'}
                 aria-pressed={playing}
             >
-                <span className="record__disc" aria-hidden="true" ref={recordRef}>
-                    <span className={`record__label label--${labelColor(current)}`}>
+                <span className="record__disc" aria-hidden="true">
+                    <span
+                        className={`record__label label--${labelColor(deckNo)}${deckNo === EMPTY ? ' is-empty' : ''}`}
+                    >
                         <span className="record__label-text">
-                            <span className="record__label-mono">{current === 'Bonus' ? '★' : current ?? 'JS'}</span>
+                            <span className="record__label-mono">
+                                {deckNo === 'Bonus' ? '★' : deckNo === EMPTY ? '' : deckNo ?? 'JS'}
+                            </span>
                             <span className="record__label-small">
-                                {current ? (current.startsWith('A') ? 'Side A' : 'Side B') : 'Juan Saracco'}
+                                {deckNo === EMPTY
+                                    ? ''
+                                    : deckNo
+                                      ? deckNo.startsWith('A')
+                                          ? 'Side A'
+                                          : 'Side B'
+                                      : 'Juan Saracco'}
                             </span>
                         </span>
                     </span>
