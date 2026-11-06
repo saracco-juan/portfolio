@@ -1462,7 +1462,11 @@ html {
 }
 
 .btn--primary:hover .btn__peek {
-  transform: translateX(30px) rotate(200deg);
+  transform: translateX(26px) rotate(200deg);
+}
+
+.hero__actions {
+  gap: 34px !important;
 }
 
 /* Download CV: the arrow drops */
