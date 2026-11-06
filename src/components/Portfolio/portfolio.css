@@ -705,7 +705,7 @@ button.mini-deck__text:hover .mini-deck__title {
 
 .sleeve:hover .sleeve__record,
 .sleeve:focus-within .sleeve__record {
-  transform: translateX(34%) rotate(120deg);
+  transform: translateX(14%) rotate(120deg);
 }
 
 .sleeve__cover {
@@ -1428,63 +1428,6 @@ html {
    Little surprises on hover
 ------------------------------------------------------------------- */
 
-/* Hero letters jump like equalizer bars */
-.hero__char {
-  transition: translate 0.35s var(--ease-out), color 0.3s ease;
-}
-
-.hero__char:hover {
-  translate: 0 -0.12em;
-  color: var(--red);
-  transition-duration: 0.12s;
-}
-
-/* "Listen to Side B": a record slides out of the button */
-.btn--primary {
-  position: relative;
-  overflow: visible;
-  isolation: isolate;
-}
-
-.btn__peek {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  width: 40px;
-  height: 40px;
-  margin-top: -20px;
-  border-radius: 50%;
-  z-index: -1;
-  background:
-    radial-gradient(circle, var(--paper) 0 6%, var(--red) 7% 30%, transparent 31%),
-    repeating-radial-gradient(circle, #151515 0 1.4px, #050505 1.4px 2.8px);
-  transition: transform 0.6s var(--ease-out);
-}
-
-.btn--primary:hover .btn__peek {
-  transform: translateX(26px) rotate(200deg);
-}
-
-.hero__actions {
-  gap: 34px !important;
-}
-
-/* Download CV: the arrow drops */
-.btn__icon-drop {
-  display: inline-grid;
-}
-
-.btn:hover .btn__icon-drop {
-  animation: drop 0.7s var(--ease-out);
-}
-
-@keyframes drop {
-  0% { transform: translateY(0); }
-  40% { transform: translateY(5px); }
-  70% { transform: translateY(-2px); }
-  100% { transform: translateY(0); }
-}
-
 /* Turntable: the arm cues up and the stopped record gets scratched */
 .site:not(.is-playing) .deck:hover .tonearm {
   transform: rotate(8deg);
@@ -1513,7 +1456,7 @@ html {
 
 /* Big titles squeeze and stretch with the variable font */
 .section__title {
-  transition: font-variation-settings 0.7s var(--ease-out), letter-spacing 0.7s var(--ease-out);
+  transition: font-variation-settings 1.6s var(--ease-out), letter-spacing 1.6s var(--ease-out);
 }
 
 .section__title:hover {
@@ -1550,36 +1493,6 @@ html {
   transform: translateY(-3px) rotate(4deg);
 }
 
-/* Gear: a tiny record rolls in next to each credit */
-.credits li {
-  position: relative;
-}
-
-.credits li::before {
-  content: "";
-  position: absolute;
-  left: -18px;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  margin-top: -6px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--red) 0 32%, #111 34%);
-  transform: translateX(-12px) rotate(-180deg) scale(0.4);
-  opacity: 0;
-  transition: transform 0.45s var(--ease-out), opacity 0.25s ease;
-}
-
-.credits li:hover {
-  padding-left: 14px;
-}
-
-.credits li:hover::before {
-  left: 0;
-  transform: none;
-  opacity: 1;
-}
-
 /* Contact: the @ spins like a record */
 .contact__at {
   display: inline-block;
@@ -1614,19 +1527,6 @@ html {
   transform: translateY(-10px) scale(1.08);
 }
 
-/* Track titles get a quick groove underline */
-.track__title {
-  background-image: repeating-linear-gradient(90deg, var(--red) 0 6px, transparent 6px 10px);
-  background-size: 0% 2px;
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-  transition: transform 0.4s var(--ease-out), background-size 0.6s var(--ease-out);
-}
-
-.track__row:hover .track__title {
-  background-size: 100% 2px;
-}
-
 /* Footer: the sign-off wobbles */
 .footer .wrap {
   transform-origin: left center;
@@ -1637,6 +1537,3 @@ html {
   transform: rotate(-1.5deg);
 }
 
-@media (hover: none) {
-  .credits li:hover { padding-left: 0; }
-}

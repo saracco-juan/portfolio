@@ -695,14 +695,10 @@ const Portfolio = () => {
 
                             <div className="hero__actions">
                                 <button className="btn btn--primary" onClick={() => scrollTo('side-b')}>
-                                    <span className="btn__peek" aria-hidden="true" />
                                     Listen to Side B
                                 </button>
                                 <a className="btn" href={resume} target="_blank" rel="noopener noreferrer">
-                                    <span className="btn__icon-drop">
-                                        <Download size={18} />
-                                    </span>{' '}
-                                    Download CV
+                                    <Download size={18} /> Download CV
                                 </a>
                             </div>
                         </div>
