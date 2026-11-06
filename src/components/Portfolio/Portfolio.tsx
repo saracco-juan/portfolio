@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CSSProperties, RefObject } from 'react';
+import { flushSync } from 'react-dom';
+import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from 'react';
 import {
     ArrowUpRight,
     Download,
@@ -198,6 +199,10 @@ const SONGS: Record<string, Song> = {
     B5: { videoId: 'C96VTjWNM38', start: 0 },
     Bonus: { videoId: 'jcz0YxYl6Ac', start: 0 },
 };
+
+const EMAIL = 'juansaracco1212@gmail.com';
+// Opens a ready-to-send email in Gmail; works even without a desktop mail app.
+const COMPOSE_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${EMAIL}&su=${encodeURIComponent('Hi Juan')}`;
 
 const labelColor = (no: string | null) => (no === null ? 'red' : no.startsWith('A') ? 'red' : no.startsWith('B') ? 'blue' : 'paper');
 
@@ -414,6 +419,70 @@ const Portfolio = () => {
     const deckTarget = () => (heroInView ? heroRecordRef.current : miniRecordRef.current);
     const slot = (no: string) => document.querySelector(`[data-disc="${no}"]`);
 
+    const [toast, setToast] = useState<string | null>(null);
+    const [themeSpin, setThemeSpin] = useState(0);
+
+    // Show what's playing in the browser tab.
+    useEffect(() => {
+        document.title = playing ? `▶ ${title} · Juan Saracco` : 'Juan Sebastián Saracco · Software Engineer';
+    }, [playing, title]);
+
+    useEffect(() => {
+        if (!toast) return;
+        const t = window.setTimeout(() => setToast(null), 2600);
+        return () => window.clearTimeout(t);
+    }, [toast]);
+
+    const onEmail = () => {
+        navigator.clipboard?.writeText(EMAIL).catch(() => {});
+        setToast('Email copied. Opening Gmail…');
+    };
+
+    // Flip the record: the new side spreads from the button like a spinning disc,
+    // while the old one drops back like a record being lifted off the platter.
+    const toggleTheme = (e: ReactMouseEvent<HTMLButtonElement>) => {
+        const next = theme === 'dark' ? 'light' : 'dark';
+        setThemeSpin((n) => n + 1);
+        const doc = document as Document & {
+            startViewTransition?: (cb: () => void) => { ready: Promise<void> };
+        };
+        if (!doc.startViewTransition || prefersReducedMotion()) {
+            setTheme(next);
+            return;
+        }
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+
+        const transition = doc.startViewTransition(() => {
+            flushSync(() => setTheme(next));
+        });
+        transition.ready.then(() => {
+            const easing = 'cubic-bezier(0.7, 0, 0.2, 1)';
+            document.documentElement.animate(
+                {
+                    clipPath: [
+                        `circle(0px at ${x}px ${y}px)`,
+                        `circle(${r * 0.18}px at ${x}px ${y}px)`,
+                        `circle(${r}px at ${x}px ${y}px)`,
+                    ],
+                    transform: ['rotate(-25deg)', 'rotate(-12deg)', 'rotate(0deg)'],
+                    transformOrigin: [`${x}px ${y}px`, `${x}px ${y}px`, `${x}px ${y}px`],
+                },
+                { duration: 1100, easing, pseudoElement: '::view-transition-new(root)' }
+            );
+            document.documentElement.animate(
+                {
+                    transform: ['scale(1)', 'scale(0.92)'],
+                    borderRadius: ['0px', '28px'],
+                    opacity: [1, 0.55],
+                },
+                { duration: 1100, easing, pseudoElement: '::view-transition-old(root)' }
+            );
+        });
+    };
+
     const togglePlay = () => {
         setTouched(true);
         if (playing) {
@@ -504,11 +573,14 @@ const Portfolio = () => {
                     </nav>
 
                     <button
-                        className="icon-btn"
-                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                        aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                        className="icon-btn theme-btn"
+                        onClick={toggleTheme}
+                        aria-label={theme === 'dark' ? 'Flip to the light side' : 'Flip to the dark side'}
+                        title="Flip the record"
                     >
-                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                        <span key={themeSpin} className={`theme-btn__icon${themeSpin ? ' is-flipping' : ''}`}>
+                            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                        </span>
                     </button>
 
                     <button
@@ -796,14 +868,24 @@ const Portfolio = () => {
                         </p>
                         <a
                             className="contact__mail"
-                            href="mailto:juansaracco1212@gmail.com"
+                            href={COMPOSE_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={onEmail}
                             data-reveal
                             style={{ '--d': 2 } as CSSProperties}
                         >
-                            juansaracco1212@gmail.com
+                            {EMAIL}
                         </a>
                         <div className="contact__links" data-reveal style={{ '--d': 3 } as CSSProperties}>
-                            <a className="icon-btn" href="mailto:juansaracco1212@gmail.com" aria-label="Email">
+                            <a
+                                className="icon-btn"
+                                href={COMPOSE_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={onEmail}
+                                aria-label="Send me an email"
+                            >
                                 <Mail size={18} />
                             </a>
                             <a
@@ -855,6 +937,10 @@ const Portfolio = () => {
                     {playing ? <Pause size={16} /> : <Play size={16} />}
                 </button>
             </aside>
+
+            <div className={`toast${toast ? ' is-visible' : ''}`} role="status">
+                {toast}
+            </div>
 
             <div className="yt-frame" aria-hidden="true">
                 <div id="yt-player" />

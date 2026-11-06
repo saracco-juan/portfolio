@@ -1243,3 +1243,71 @@
 @media (prefers-reduced-motion: reduce) {
   .mini-deck__disc { animation: none; }
 }
+
+/* ------------------------------------------------------------------
+   Theme flip
+------------------------------------------------------------------- */
+html {
+  background: #000;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+.theme-btn {
+  overflow: hidden;
+  background:
+    radial-gradient(circle, transparent 38%, color-mix(in srgb, var(--fg) 6%, transparent) 39% 40%, transparent 41%),
+    radial-gradient(circle, transparent 58%, color-mix(in srgb, var(--fg) 6%, transparent) 59% 60%, transparent 61%);
+}
+
+.theme-btn__icon {
+  display: grid;
+  place-items: center;
+}
+
+.theme-btn__icon.is-flipping {
+  animation: flip-icon 0.9s var(--ease-out);
+}
+
+@keyframes flip-icon {
+  0% { transform: rotate(-200deg) scale(0.2); opacity: 0; }
+  60% { transform: rotate(20deg) scale(1.15); opacity: 1; }
+  100% { transform: none; }
+}
+
+/* ------------------------------------------------------------------
+   Toast
+------------------------------------------------------------------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 70;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transform: translate(-50%, 140%);
+  opacity: 0;
+  transition: transform 0.5s var(--ease-out), opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.toast.is-visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
