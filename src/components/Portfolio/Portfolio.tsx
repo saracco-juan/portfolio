@@ -19,6 +19,7 @@ import resume from '../../assets/juan-saracco-cv.pdf';
 import './portfolio.css';
 
 const Turntable3D = lazy(() => import('./Turntable3D'));
+const LinerPortrait3D = lazy(() => import('./LinerPortrait3D'));
 
 /* ------------------------------------------------------------------
    Content
@@ -768,12 +769,7 @@ const Portfolio = () => {
                 {/* --- Liner notes --- */}
                 <section id="notes" className="section">
                     <div className="wrap notes">
-                        <div className="sleeve" data-reveal tabIndex={0} aria-label="Photo of Juan">
-                            <div className="sleeve__record" aria-hidden="true" />
-                            <div className="sleeve__cover">
-                                <img src={profileImage} alt="Line drawing of Juan Sebastián Saracco" />
-                            </div>
-                        </div>
+                        <PortraitSleeve theme={theme} />
 
                         <div className="notes__text">
                             <h2 className="section__title" data-reveal style={{ marginBottom: 32 }}>
@@ -1120,6 +1116,45 @@ const supportsWebGL = () => {
     }
 };
 
+type RevealMode = 'pending' | '3d' | 'css' | '3d-late';
+
+/**
+ * Decides what a 3D-enhanced block shows while its scene loads.
+ * - pending: WebGL is there and the scene is loading; show neither version yet.
+ * - 3d: the scene arrived in time; it appears directly, never after the flat one.
+ * - css: no WebGL, or the scene is slow; the CSS version shows as a fallback.
+ * - 3d-late: the scene arrived after the fallback; cross-fade over it.
+ */
+function use3DReveal(timeoutMs: number) {
+    const [use3D] = useState(supportsWebGL);
+    const [ready, setReady] = useState(false);
+    const [timedOut, setTimedOut] = useState(false);
+
+    useEffect(() => {
+        if (!use3D) return;
+        const id = window.setTimeout(() => setTimedOut(true), timeoutMs);
+        return () => window.clearTimeout(id);
+    }, [use3D, timeoutMs]);
+
+    // The timeout is only consulted until the scene is ready.
+    const [readyLate, setReadyLate] = useState(false);
+    const onReady = () => {
+        setReadyLate(timedOut);
+        setReady(true);
+    };
+
+    const mode: RevealMode = !use3D
+        ? 'css'
+        : ready
+          ? readyLate
+              ? '3d-late'
+              : '3d'
+          : timedOut
+            ? 'css'
+            : 'pending';
+    return { use3D, mode, onReady };
+}
+
 // If the 3D chunk or WebGL fails, the CSS deck simply stays.
 class Fallback extends Component<{ children: ReactNode }, { failed: boolean }> {
     state = { failed: false };
@@ -1131,12 +1166,49 @@ class Fallback extends Component<{ children: ReactNode }, { failed: boolean }> {
     }
 }
 
-const Turntable = ({ playing, hint, deckNo, recordRef, onToggle, active }: TurntableProps) => {
-    const [use3D] = useState(supportsWebGL);
-    const [ready3D, setReady3D] = useState(false);
+/* ------------------------------------------------------------------
+   Liner notes sleeve
+------------------------------------------------------------------- */
+
+const COVER_CLASS: Record<RevealMode, string> = {
+    pending: ' is-pending',
+    '3d': ' is-3d is-instant',
+    css: '',
+    '3d-late': ' is-3d',
+};
+
+const PortraitSleeve = ({ theme }: { theme: 'light' | 'dark' }) => {
+    const { use3D, mode, onReady } = use3DReveal(2500);
 
     return (
-    <div className={`deck${ready3D ? ' deck--3d' : ''}`}>
+        <div className="sleeve" data-reveal tabIndex={0} aria-label="Photo of Juan">
+            <div className="sleeve__record" aria-hidden="true" />
+            <div className={`sleeve__cover${COVER_CLASS[mode]}`}>
+                <img src={profileImage} alt="Line drawing of Juan Sebastián Saracco" />
+                {use3D && (
+                    <Fallback>
+                        <Suspense fallback={null}>
+                            <LinerPortrait3D theme={theme} onReady={onReady} />
+                        </Suspense>
+                    </Fallback>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const DECK_CLASS: Record<RevealMode, string> = {
+    pending: ' deck--pending',
+    '3d': ' deck--3d deck--instant',
+    css: '',
+    '3d-late': ' deck--3d',
+};
+
+const Turntable = ({ playing, hint, deckNo, recordRef, onToggle, active }: TurntableProps) => {
+    const { use3D, mode, onReady } = use3DReveal(2000);
+
+    return (
+    <div className={`deck${DECK_CLASS[mode]}`}>
         {use3D && (
             <Fallback>
                 <Suspense fallback={null}>
@@ -1145,7 +1217,8 @@ const Turntable = ({ playing, hint, deckNo, recordRef, onToggle, active }: Turnt
                         deckNo={deckNo}
                         labelColor={labelColor(deckNo)}
                         active={active}
-                        onReady={() => setReady3D(true)}
+                        dropIn={mode === 'pending' || mode === '3d'}
+                        onReady={onReady}
                     />
                 </Suspense>
             </Fallback>

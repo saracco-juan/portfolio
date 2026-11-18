@@ -21,10 +21,6 @@ const RECORD_R = PLATTER_R * 0.94;
 const LABEL_R = RECORD_R * 0.36;
 const PLATTER_X = toWorldX(0.07 + 0.72 / 2);
 
-// Mirrors .tonearm: pivot near the top right, arm 66% of the deck tall.
-const ARM_X = toWorldX(1 - 0.09) - 0.02;
-const ARM_Y = 0.5 - 0.09 - 0.02;
-const ARM_LEN = 0.66;
 const ARM_REST = THREE.MathUtils.degToRad(4);
 const ARM_PLAY = THREE.MathUtils.degToRad(-27);
 
@@ -43,8 +39,32 @@ export type Turntable3DProps = {
     deckNo: string | null;
     labelColor: LabelColor;
     active: boolean;
+    /** Play the drop-in entrance when the canvas is revealed. */
+    dropIn: boolean;
     onReady: () => void;
 };
+
+/* ------------------------------------------------------------------
+   Drop-in entrance: after the deck lands (CSS deck-drop), the record
+   falls onto the platter with a small bounce and the arm swings in.
+------------------------------------------------------------------- */
+const DROP_DELAY = 0.24; // Seconds after reveal; the deck lands at ~0.27s.
+const DROP_FALL = 0.18;
+const DROP_BOUNCE = 0.16;
+const DROP_LIFT_SCALE = 0.2; // How much bigger the record looks while held up.
+const ARM_PARKED = ARM_REST + 0.14;
+const ENTRANCE_END = DROP_DELAY + DROP_FALL + DROP_BOUNCE + 0.25;
+
+// Height of the record above the platter, 1 = held up, 0 = resting.
+function recordHeight(t: number) {
+    if (t < 0) return 1;
+    if (t < DROP_FALL) {
+        const u = t / DROP_FALL;
+        return 1 - u * u; // Accelerates as it falls.
+    }
+    const v = (t - DROP_FALL) / DROP_BOUNCE;
+    return v < 1 ? 0.06 * Math.sin(Math.PI * v) : 0;
+}
 
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canHoverPrecisely = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -186,6 +206,89 @@ function createLabelTexture(deckNo: string | null, color: LabelColor, tokens: To
 }
 
 /* ------------------------------------------------------------------
+   Tonearm geometry, read from the CSS tonearm it replaces.
+
+   The CSS arm is sized in fixed pixels (pivot, head, offsets), so any
+   hand-tuned fraction drifts with the deck size and the two arms show
+   up doubled while the canvas fades in. Offsets ignore transforms, so
+   this is safe during the deck's entrance animation.
+------------------------------------------------------------------- */
+
+type ArmGeometry = {
+    x: number;
+    y: number;
+    pivotRadius: number;
+    capRadius: number;
+    armTop: number;
+    armBottom: number;
+    armRadius: number;
+    headY: number;
+    headWidth: number;
+    headHeight: number;
+    headRadius: number;
+};
+
+const FALLBACK_ARM: ArmGeometry = {
+    x: toWorldX(1 - 0.09),
+    y: 0.39,
+    pivotRadius: 0.055,
+    capRadius: 0.017,
+    armTop: 0.024,
+    armBottom: -0.636,
+    armRadius: 0.008,
+    headY: -0.626,
+    headWidth: 0.058,
+    headHeight: 0.09,
+    headRadius: 0.01,
+};
+
+function measureArm(deck: HTMLElement | null): ArmGeometry {
+    const arm = deck?.querySelector<HTMLElement>('.tonearm');
+    const pivot = arm?.querySelector<HTMLElement>('.tonearm__pivot');
+    const rod = arm?.querySelector<HTMLElement>('.tonearm__arm');
+    const head = arm?.querySelector<HTMLElement>('.tonearm__head');
+    if (!deck || !arm || !pivot || !rod || !head || !deck.clientHeight) return FALLBACK_ARM;
+
+    const H = deck.clientHeight;
+    const W = deck.clientWidth;
+    const originY = parseFloat(getComputedStyle(arm).transformOrigin.split(' ')[1]) || 9;
+    const px = arm.offsetLeft + arm.offsetWidth / 2;
+    const py = arm.offsetTop + originY;
+    const toUnits = (v: number) => v / H;
+
+    return {
+        x: (px - W / 2) / H,
+        y: (H / 2 - py) / H,
+        pivotRadius: toUnits(pivot.offsetWidth / 2),
+        capRadius: toUnits(pivot.offsetWidth * 0.3 * Math.SQRT2 * 0.5),
+        armTop: toUnits(originY - rod.offsetTop),
+        armBottom: toUnits(originY - (rod.offsetTop + rod.offsetHeight)),
+        armRadius: toUnits(rod.offsetWidth / 2),
+        headY: toUnits(originY - (head.offsetTop + head.offsetHeight / 2)),
+        headWidth: toUnits(head.offsetWidth),
+        headHeight: toUnits(head.offsetHeight),
+        headRadius: toUnits(parseFloat(getComputedStyle(head).borderTopLeftRadius) || 0),
+    };
+}
+
+function roundedRect(width: number, height: number, radius: number) {
+    const r = Math.min(radius, width / 2, height / 2);
+    const x = -width / 2;
+    const y = -height / 2;
+    const shape = new THREE.Shape();
+    shape.moveTo(x + r, y);
+    shape.lineTo(x + width - r, y);
+    shape.quadraticCurveTo(x + width, y, x + width, y + r);
+    shape.lineTo(x + width, y + height - r);
+    shape.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    shape.lineTo(x + r, y + height);
+    shape.quadraticCurveTo(x, y + height, x, y + height - r);
+    shape.lineTo(x, y + r);
+    shape.quadraticCurveTo(x, y, x + r, y);
+    return new THREE.ShapeGeometry(shape, 6);
+}
+
+/* ------------------------------------------------------------------
    Scene
 ------------------------------------------------------------------- */
 
@@ -222,17 +325,30 @@ function useFontsReady() {
 
 type SceneProps = Turntable3DProps;
 
-function Scene({ playing, deckNo, labelColor, active, onReady }: SceneProps) {
+function Scene({ playing, deckNo, labelColor, active, dropIn, onReady }: SceneProps) {
     const invalidate = useThree((s) => s.invalidate);
     const host = useThree((s) => s.gl.domElement);
+    const size = useThree((s) => s.size);
+    const deck = host.closest<HTMLElement>('.deck');
+    // size is a dependency so the arm is re-measured whenever the deck resizes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const arm = useMemo(() => measureArm(deck), [deck, size.width, size.height]);
+    const headGeometry = useMemo(
+        () => roundedRect(arm.headWidth, arm.headHeight, arm.headRadius),
+        [arm.headWidth, arm.headHeight, arm.headRadius]
+    );
+    useEffect(() => () => headGeometry.dispose(), [headGeometry]);
 
     const tiltRef = useRef<THREE.Group>(null);
     const recordRef = useRef<THREE.Group>(null);
     const labelRef = useRef<THREE.Mesh>(null);
     const labelMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
     const armRef = useRef<THREE.Group>(null);
+    const shadowRef = useRef<THREE.Mesh>(null);
+    const shadowMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
 
-    const motion = useRef({ speed: 0, arm: ARM_REST, labelScale: 1, pointerX: 0, pointerY: 0 });
+    // revealedAt: clock time when the canvas started fading in, -1 before that.
+    const motion = useRef({ speed: 0, arm: ARM_REST, labelScale: 1, pointerX: 0, pointerY: 0, revealedAt: -1 });
     // Frames drawn since the label got its real font; -1 once onReady has fired.
     const readyFrames = useRef(0);
     const reducedMotion = useMemo(prefersReducedMotion, []);
@@ -283,7 +399,7 @@ function Scene({ playing, deckNo, labelColor, active, onReady }: SceneProps) {
         if (fontsReady) invalidate();
     }, [fontsReady, invalidate]);
 
-    useFrame((_, rawDelta) => {
+    useFrame((state, rawDelta) => {
         const dt = Math.min(rawDelta, 1 / 20);
         const m = motion.current;
         const empty = deckNo === EMPTY;
@@ -293,8 +409,27 @@ function Scene({ playing, deckNo, labelColor, active, onReady }: SceneProps) {
         if (Math.abs(m.speed) < 1e-3) m.speed = targetSpeed;
         if (recordRef.current) recordRef.current.rotation.z -= m.speed * dt;
 
-        const targetArm = playing ? ARM_PLAY : ARM_REST;
-        m.arm = reducedMotion ? targetArm : damp(m.arm, targetArm, 3.2, dt);
+        // Drop-in entrance, timed from the reveal.
+        const elapsed = state.clock.elapsedTime;
+        const sinceReveal = m.revealedAt < 0 ? -1 : elapsed - m.revealedAt;
+        const entrance = dropIn && !reducedMotion && (m.revealedAt < 0 || sinceReveal < ENTRANCE_END);
+        const height = entrance ? recordHeight(m.revealedAt < 0 ? -1 : sinceReveal - DROP_DELAY) : 0;
+        if (recordRef.current) {
+            recordRef.current.scale.setScalar(1 + DROP_LIFT_SCALE * height);
+            recordRef.current.position.y = 0.025 * height;
+        }
+        if (shadowRef.current && shadowMaterialRef.current) {
+            shadowRef.current.scale.setScalar(1 + 0.3 * height);
+            shadowRef.current.position.set(0.012 + 0.03 * height, -0.02 - 0.05 * height, PLATTER_H + 0.0005);
+            shadowMaterialRef.current.opacity = 1 - 0.65 * height;
+        }
+        // The arm waits off to the side until the record has landed.
+        const armParked = entrance && (m.revealedAt < 0 || sinceReveal < DROP_DELAY + DROP_FALL + 0.04);
+        if (armParked && m.revealedAt < 0) m.arm = ARM_PARKED;
+
+        const targetArm = armParked ? ARM_PARKED : playing ? ARM_PLAY : ARM_REST;
+        // A snappier swing while it settles in after the drop.
+        m.arm = reducedMotion ? targetArm : damp(m.arm, targetArm, entrance ? 7 : 3.2, dt);
         const armTravel = Math.abs(targetArm - m.arm);
         if (armRef.current) {
             armRef.current.rotation.z = m.arm;
@@ -311,8 +446,12 @@ function Scene({ playing, deckNo, labelColor, active, onReady }: SceneProps) {
 
         let tiltMoving = false;
         if (tiltRef.current) {
-            const tx = m.pointerY * MAX_TILT * 0.6;
-            const ty = m.pointerX * MAX_TILT;
+            // Stay flat until the fade-in is over, so the 3D deck lines up with
+            // the CSS one underneath while both are visible.
+            const settleTime = dropIn ? ENTRANCE_END : 0.6;
+            const tiltOn = m.revealedAt >= 0 && sinceReveal > settleTime ? 1 : 0;
+            const tx = m.pointerY * MAX_TILT * 0.6 * tiltOn;
+            const ty = m.pointerX * MAX_TILT * tiltOn;
             const g = tiltRef.current.rotation;
             g.x = damp(g.x, tx, 5, dt);
             g.y = damp(g.y, ty, 5, dt);
@@ -320,7 +459,11 @@ function Scene({ playing, deckNo, labelColor, active, onReady }: SceneProps) {
         }
 
         const moving =
-            m.speed !== 0 || armTravel > 1e-4 || Math.abs(m.labelScale - targetScale) > 1e-3 || tiltMoving;
+            m.speed !== 0 ||
+            armTravel > 1e-4 ||
+            Math.abs(m.labelScale - targetScale) > 1e-3 ||
+            tiltMoving ||
+            (entrance && m.revealedAt >= 0);
         // Reveal the canvas only after a complete frame (final zoom and font) is on screen.
         let revealing = false;
         if (fontsReady && readyFrames.current >= 0) {
@@ -328,6 +471,7 @@ function Scene({ playing, deckNo, labelColor, active, onReady }: SceneProps) {
             revealing = true;
             if (readyFrames.current > 2) {
                 readyFrames.current = -1;
+                m.revealedAt = state.clock.elapsedTime;
                 onReady();
             }
         }
@@ -350,9 +494,9 @@ function Scene({ playing, deckNo, labelColor, active, onReady }: SceneProps) {
                         <meshStandardMaterial color="#1c1c1b" roughness={0.6} metalness={0.3} />
                     </mesh>
 
-                    <mesh position={[0.012, -0.02, PLATTER_H + 0.0005]}>
+                    <mesh ref={shadowRef} position={[0.012, -0.02, PLATTER_H + 0.0005]}>
                         <planeGeometry args={[RECORD_R * 2.25, RECORD_R * 2.25]} />
-                        <meshBasicMaterial map={shadow} transparent depthWrite={false} />
+                        <meshBasicMaterial ref={shadowMaterialRef} map={shadow} transparent depthWrite={false} />
                     </mesh>
 
                     {/* Record */}
@@ -391,24 +535,29 @@ function Scene({ playing, deckNo, labelColor, active, onReady }: SceneProps) {
                     </mesh>
                 </group>
 
-                {/* Tonearm */}
-                <group position={[ARM_X, ARM_Y, RECORD_TOP + 0.03]}>
+                {/* Tonearm, matched to the CSS one (pivot, rod, head). Unlit colors,
+                    so it reads exactly like the CSS arm while the two cross-fade. */}
+                <group position={[arm.x, arm.y, RECORD_TOP + 0.03]}>
                     <mesh rotation-x={Math.PI / 2} position-z={-0.012}>
-                        <cylinderGeometry args={[0.046, 0.05, 0.04, 48]} />
-                        <meshStandardMaterial color="#3a3936" roughness={0.5} metalness={0.4} />
+                        <cylinderGeometry args={[arm.pivotRadius, arm.pivotRadius, 0.03, 48]} />
+                        <meshBasicMaterial color="#3a3936" />
                     </mesh>
-                    <mesh rotation-x={Math.PI / 2} position-z={0.012}>
-                        <cylinderGeometry args={[0.016, 0.016, 0.012, 32]} />
-                        <meshStandardMaterial color="#8f8c84" roughness={0.3} metalness={0.7} />
+                    <mesh position-z={0.004}>
+                        <circleGeometry args={[arm.capRadius, 32]} />
+                        <meshBasicMaterial color="#8f8c84" />
                     </mesh>
                     <group ref={armRef} rotation-z={ARM_REST}>
-                        <mesh position-y={-ARM_LEN / 2}>
-                            <cylinderGeometry args={[0.0066, 0.0066, ARM_LEN, 16]} />
-                            <meshStandardMaterial color="#dcd8d0" roughness={0.28} metalness={0.55} />
+                        <mesh position-y={(arm.armTop + arm.armBottom) / 2} position-z={0.006}>
+                            <cylinderGeometry args={[arm.armRadius, arm.armRadius, arm.armTop - arm.armBottom, 16]} />
+                            <meshBasicMaterial color="#d2cec6" />
                         </mesh>
-                        <mesh position-y={-ARM_LEN} rotation-z={THREE.MathUtils.degToRad(18)}>
-                            <boxGeometry args={[0.048, 0.075, 0.018]} />
-                            <meshStandardMaterial color="#2b2a28" roughness={0.6} />
+                        {/* The head sits above the rod, as in the CSS. */}
+                        <mesh
+                            geometry={headGeometry}
+                            position={[0, arm.headY, 0.006 + arm.armRadius + 0.002]}
+                            rotation-z={THREE.MathUtils.degToRad(18)}
+                        >
+                            <meshBasicMaterial color="#2b2a28" />
                         </mesh>
                     </group>
                 </group>
@@ -425,6 +574,10 @@ export default function Turntable3D({ onReady, ...scene }: Turntable3DProps) {
                 flat
                 frameloop="demand"
                 dpr={[1, 2]}
+                // Measure with offset sizes: the parents animate in with transforms,
+                // and a transformed measurement leaves the canvas misaligned until
+                // the next resize, which then clears it for a frame.
+                resize={{ offsetSize: true, scroll: false }}
                 camera={{ position: [0, 0, 5], near: 0.1, far: 20 }}
                 gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
             >
