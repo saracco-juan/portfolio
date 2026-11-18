@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Component, Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from 'react';
+import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, RefObject } from 'react';
 import {
     ArrowUpRight,
     Download,
@@ -17,6 +17,8 @@ import {
 import profileImage from '../../assets/juan-drawing.jpg';
 import resume from '../../assets/juan-saracco-cv.pdf';
 import './portfolio.css';
+
+const Turntable3D = lazy(() => import('./Turntable3D'));
 
 /* ------------------------------------------------------------------
    Content
@@ -758,6 +760,7 @@ const Portfolio = () => {
                             deckNo={deckNo}
                             recordRef={heroRecordRef}
                             onToggle={togglePlay}
+                            active={heroInView}
                         />
                     </div>
                 </section>
@@ -1106,10 +1109,47 @@ type TurntableProps = {
     deckNo: string | null;
     recordRef: RefObject<HTMLButtonElement | null>;
     onToggle: () => void;
+    active: boolean;
 };
 
-const Turntable = ({ playing, hint, deckNo, recordRef, onToggle }: TurntableProps) => (
-    <div className="deck">
+const supportsWebGL = () => {
+    try {
+        return !!document.createElement('canvas').getContext('webgl2');
+    } catch {
+        return false;
+    }
+};
+
+// If the 3D chunk or WebGL fails, the CSS deck simply stays.
+class Fallback extends Component<{ children: ReactNode }, { failed: boolean }> {
+    state = { failed: false };
+    static getDerivedStateFromError() {
+        return { failed: true };
+    }
+    render() {
+        return this.state.failed ? null : this.props.children;
+    }
+}
+
+const Turntable = ({ playing, hint, deckNo, recordRef, onToggle, active }: TurntableProps) => {
+    const [use3D] = useState(supportsWebGL);
+    const [ready3D, setReady3D] = useState(false);
+
+    return (
+    <div className={`deck${ready3D ? ' deck--3d' : ''}`}>
+        {use3D && (
+            <Fallback>
+                <Suspense fallback={null}>
+                    <Turntable3D
+                        playing={playing}
+                        deckNo={deckNo}
+                        labelColor={labelColor(deckNo)}
+                        active={active}
+                        onReady={() => setReady3D(true)}
+                    />
+                </Suspense>
+            </Fallback>
+        )}
         <div className="platter">
             <button
                 ref={recordRef}
@@ -1161,6 +1201,7 @@ const Turntable = ({ playing, hint, deckNo, recordRef, onToggle }: TurntableProp
             </button>
         </div>
     </div>
-);
+    );
+};
 
 export default Portfolio;
