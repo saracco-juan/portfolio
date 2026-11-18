@@ -1543,3 +1543,38 @@ html {
 .flying-disc span {
   pointer-events: none;
 }
+
+/* ------------------------------------------------------------------
+   3D turntable — drawn under the DOM deck. The record button and the
+   controls stay on top as the real, accessible targets; once the
+   canvas is up, the CSS-drawn parts fade out.
+------------------------------------------------------------------- */
+.deck__canvas {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.deck--3d .deck__canvas {
+  opacity: 1;
+}
+
+.deck--3d .platter {
+  background: transparent;
+  box-shadow: none;
+}
+
+.deck--3d .record__disc,
+.deck--3d .record__sheen {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.deck--3d .tonearm {
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 1.1s var(--ease-out);
+}
