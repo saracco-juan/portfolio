@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -193,7 +193,8 @@ function createLabelTexture(deckNo: string | null, color: LabelColor, tokens: To
 function DeckCamera() {
     const get = useThree((s) => s.get);
     const height = useThree((s) => s.size.height);
-    useEffect(() => {
+    // Layout effect, so the very first frame already uses the right zoom.
+    useLayoutEffect(() => {
         const { camera, invalidate } = get();
         camera.zoom = height;
         camera.updateProjectionMatrix();
@@ -219,9 +220,9 @@ function useFontsReady() {
     return ready;
 }
 
-type SceneProps = Omit<Turntable3DProps, 'onReady'>;
+type SceneProps = Turntable3DProps;
 
-function Scene({ playing, deckNo, labelColor, active }: SceneProps) {
+function Scene({ playing, deckNo, labelColor, active, onReady }: SceneProps) {
     const invalidate = useThree((s) => s.invalidate);
     const host = useThree((s) => s.gl.domElement);
 
@@ -232,6 +233,8 @@ function Scene({ playing, deckNo, labelColor, active }: SceneProps) {
     const armRef = useRef<THREE.Group>(null);
 
     const motion = useRef({ speed: 0, arm: ARM_REST, labelScale: 1, pointerX: 0, pointerY: 0 });
+    // Frames drawn since the label got its real font; -1 once onReady has fired.
+    const readyFrames = useRef(0);
     const reducedMotion = useMemo(prefersReducedMotion, []);
     const fontsReady = useFontsReady();
 
@@ -276,6 +279,10 @@ function Scene({ playing, deckNo, labelColor, active }: SceneProps) {
         if (active) invalidate();
     }, [active, playing, deckNo, invalidate]);
 
+    useEffect(() => {
+        if (fontsReady) invalidate();
+    }, [fontsReady, invalidate]);
+
     useFrame((_, rawDelta) => {
         const dt = Math.min(rawDelta, 1 / 20);
         const m = motion.current;
@@ -314,7 +321,18 @@ function Scene({ playing, deckNo, labelColor, active }: SceneProps) {
 
         const moving =
             m.speed !== 0 || armTravel > 1e-4 || Math.abs(m.labelScale - targetScale) > 1e-3 || tiltMoving;
-        if (moving && active) invalidate();
+        // Reveal the canvas only after a complete frame (final zoom and font) is on screen.
+        let revealing = false;
+        if (fontsReady && readyFrames.current >= 0) {
+            readyFrames.current += 1;
+            revealing = true;
+            if (readyFrames.current > 2) {
+                readyFrames.current = -1;
+                onReady();
+            }
+        }
+
+        if ((moving && active) || revealing) invalidate();
     });
 
     return (
@@ -409,9 +427,8 @@ export default function Turntable3D({ onReady, ...scene }: Turntable3DProps) {
                 dpr={[1, 2]}
                 camera={{ position: [0, 0, 5], near: 0.1, far: 20 }}
                 gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-                onCreated={() => onReady()}
             >
-                <Scene {...scene} />
+                <Scene {...scene} onReady={onReady} />
             </Canvas>
         </div>
     );
